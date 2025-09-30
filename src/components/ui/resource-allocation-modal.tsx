@@ -73,7 +73,7 @@ export function ResourceAllocationModal({
         const data = await response.json()
         // Filter out community users for resource allocation
         const eligibleUsers = data.filter((user: User) => 
-          user.role !== "COMMUNITY" && user.role !== "ADMIN"
+          user.role !== "COMMUNITY_USER" && user.role !== "ADMIN"
         )
         setUsers(eligibleUsers)
       } else {

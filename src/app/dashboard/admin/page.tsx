@@ -33,9 +33,9 @@ interface IncidentReport {
   title: string
   description: string
   type: string
-  severity: string
+  severity: number
   status: string
-  location: string
+  address: string
   coordinates?: string
   contactName: string
   contactPhone: string
@@ -150,8 +150,8 @@ export default function AdminDashboardPage() {
 
   const filteredIncidents = incidents.filter(incident => {
     const matchesSearch = incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         incident.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         incident.location.toLowerCase().includes(searchTerm.toLowerCase())
+        incident.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        incident.address.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === "all" || incident.status === statusFilter
     const matchesType = typeFilter === "all" || incident.type === typeFilter
     
@@ -171,15 +171,17 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: number) => {
     switch (severity) {
-      case "CRITICAL":
+      case 5:
         return "text-red-600 bg-red-50"
-      case "HIGH":
+      case 4:
         return "text-orange-600 bg-orange-50"
-      case "MEDIUM":
+      case 3:
         return "text-yellow-600 bg-yellow-50"
-      case "LOW":
+      case 2:
+        return "text-blue-600 bg-blue-50"
+      case 1:
         return "text-green-600 bg-green-50"
       default:
         return "text-gray-600 bg-gray-50"
@@ -379,7 +381,7 @@ export default function AdminDashboardPage() {
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <MapPin className="h-4 w-4" />
-                            {incident.location}
+                            {incident.address}
                           </div>
                           <div className="flex items-center gap-1">
                             <User className="h-4 w-4" />

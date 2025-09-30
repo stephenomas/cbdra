@@ -4,9 +4,9 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 // POST /api/incidents/[id]/allocate - Allocate resources to incident (Admin only)
@@ -14,6 +14,7 @@ export async function POST(
   request: NextRequest,
   { params }: RouteParams
 ) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     
@@ -50,7 +51,7 @@ export async function POST(
 
     // Check if incident exists
     const incident = await prisma.incidentReport.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     if (!incident) {
@@ -78,7 +79,7 @@ export async function POST(
 
     const allocation = await prisma.resourceAllocation.create({
       data: {
-        incidentReportId: params.id,
+        incidentReportId: id,
         allocatedToId,
         allocatedById: session.user.id,
         resourceType,
@@ -129,6 +130,7 @@ export async function GET(
   request: NextRequest,
   { params }: RouteParams
 ) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     
@@ -137,7 +139,7 @@ export async function GET(
     }
 
     const allocations = await prisma.resourceAllocation.findMany({
-      where: { incidentReportId: params.id },
+      where: { incidentReportId: id },
       include: {
         allocatedTo: {
           select: {

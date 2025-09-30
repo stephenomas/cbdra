@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, MapPin, AlertTriangle } from "lucide-react"
+import { Loader2, MapPin, AlertTriangle, Upload, X, Image, Video } from "lucide-react"
 import { DashboardLayout } from "@/components/ui/dashboard-layout"
 import { GoogleMap } from "@/components/ui/google-map"
 
@@ -39,6 +39,8 @@ export default function ReportIncidentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([])
+  const [isUploading, setIsUploading] = useState(false)
 
   const [formData, setFormData] = useState({
     title: "",
@@ -116,6 +118,54 @@ export default function ReportIncidentPage() {
     }
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setIsUploading(true)
+    setError("")
+
+    try {
+      const formData = new FormData()
+      Array.from(files).forEach(file => {
+        formData.append("files", file)
+      })
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to upload files")
+      }
+
+      const result = await response.json()
+      setUploadedFiles(prev => [...prev, ...result.files])
+    } catch (error) {
+      console.error("Upload error:", error)
+      setError(error instanceof Error ? error.message : "Failed to upload files")
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const removeFile = (fileUrl: string) => {
+    setUploadedFiles(prev => prev.filter(url => url !== fileUrl))
+  }
+
+  const getFileType = (url: string) => {
+    const extension = url.split('.').pop()?.toLowerCase()
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
+      return 'image'
+    }
+    if (['mp4', 'webm', 'ogg'].includes(extension || '')) {
+      return 'video'
+    }
+    return 'unknown'
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -142,7 +192,8 @@ export default function ReportIncidentPage() {
           address: formData.address,
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
           longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-          contactInfo: formData.contactInfo || null
+          contactInfo: formData.contactInfo || null,
+          images: uploadedFiles
         }),
       })
 
@@ -163,6 +214,7 @@ export default function ReportIncidentPage() {
         longitude: "",
         contactInfo: ""
       })
+      setUploadedFiles([])
 
       // Redirect to incidents dashboard after 2 seconds
       setTimeout(() => {
@@ -297,14 +349,14 @@ export default function ReportIncidentPage() {
                 >
                   <MapPin className="h-4 w-4" />
                 </Button>
-                <Button
+                {/* <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowMap(!showMap)}
                   className="shrink-0"
                 >
                   {showMap ? "Hide Map" : "Show Map"}
-                </Button>
+                </Button> */}
               </div>
               {showMap && (
                 <div className="mt-4">
@@ -353,6 +405,99 @@ export default function ReportIncidentPage() {
                 onChange={(e) => handleInputChange("contactInfo", e.target.value)}
                 placeholder="Phone number or additional contact details (optional)"
               />
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <Label htmlFor="files">Images/Videos</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <input
+                  id="files"
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="files"
+                  className="cursor-pointer flex flex-col items-center gap-2"
+                >
+                  <Upload className="h-8 w-8 text-gray-400" />
+                  <span className="text-sm text-gray-600">
+                    Click to upload images or videos
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Supports: JPG, PNG, GIF, WebP, MP4, WebM, OGG (Max 10MB each)
+                  </span>
+                </label>
+              </div>
+
+              {/* Display uploaded files */}
+              {uploadedFiles.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                  {uploadedFiles.map((fileUrl, index) => (
+                    <div key={index} className="relative group">
+                      {getFileType(fileUrl) === 'image' ? (
+                        <div className="relative">
+                          <img
+                            src={fileUrl}
+                            alt={`Upload ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border"
+                            onError={(e) => {
+                              console.error('Image failed to load:', fileUrl)
+                              const target = e.currentTarget
+                              target.style.backgroundColor = '#f3f4f6'
+                              target.style.display = 'flex'
+                              target.style.alignItems = 'center'
+                              target.style.justifyContent = 'center'
+                              target.innerHTML = '<span style="color: #6b7280; font-size: 12px;">Failed to load image</span>'
+                            }}
+                            onLoad={() => {
+                              console.log('Image loaded successfully:', fileUrl)
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                            <Image className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      ) : getFileType(fileUrl) === 'video' ? (
+                        <div className="relative">
+                          <video
+                            src={fileUrl}
+                            className="w-full h-24 object-cover rounded-lg border"
+                            muted
+                            onError={(e) => {
+                              console.error('Video failed to load:', fileUrl)
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-20 rounded-lg flex items-center justify-center">
+                            <Video className="h-6 w-6 text-white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full h-24 bg-gray-100 rounded-lg border flex items-center justify-center">
+                          <span className="text-xs text-gray-500">Unknown file</span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(fileUrl)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {isUploading && (
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading files...
+                </div>
+              )}
             </div>
 
             <Button

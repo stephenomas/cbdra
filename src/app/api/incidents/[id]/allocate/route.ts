@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { Session } from "next-auth"
 
 interface RouteParams {
   params: Promise<{
@@ -16,7 +17,7 @@ export async function POST(
 ) {
   const { id } = await params
   let body: { allocatedToId?: string; resourceType?: string; description?: string; priority?: number } | null = null
-  let session: Awaited<ReturnType<typeof getServerSession>> | null = null
+  let session: Session | null = null
   
   try {
     session = await getServerSession(authOptions)
@@ -34,6 +35,14 @@ export async function POST(
     }
 
     body = await request.json()
+    
+    if (!body) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      )
+    }
+    
     const { allocatedToId, resourceType, description, priority } = body
 
     // Validate required fields

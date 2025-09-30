@@ -17,7 +17,10 @@ import {
   Phone,
   Loader2,
   CheckCircle,
-  XCircle
+  XCircle,
+  Image,
+  Video,
+  Download
 } from "lucide-react"
 
 interface IncidentReport {
@@ -28,9 +31,11 @@ interface IncidentReport {
   severity: number
   status: string
   location: string
+  address: string
   latitude?: number
   longitude?: number
   contactInfo?: string
+  images: string[]
   createdAt: string
   updatedAt: string
   verifiedAt?: string
@@ -124,12 +129,24 @@ const getSeverityColor = (severity: number) => {
 
 const getRoleIcon = (role: string) => {
   switch (role) {
-    case "VOLUNTEER": return "🤝"
-    case "NGO": return "🏢"
-    case "GOVERNMENT_AGENCY": return "🏛️"
-    case "ADMIN": return "👑"
-    default: return "👤"
+    case "ADMIN":
+      return "👑"
+    case "RESPONDER":
+      return "🚨"
+    default:
+      return "👤"
   }
+}
+
+// Helper function to determine if a URL is an image or video
+const getFileType = (url: string): 'image' | 'video' => {
+  const extension = url.split('.').pop()?.toLowerCase()
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']
+  const videoExtensions = ['mp4', 'webm', 'ogg', 'avi', 'mov']
+  
+  if (imageExtensions.includes(extension || '')) return 'image'
+  if (videoExtensions.includes(extension || '')) return 'video'
+  return 'image' // default to image
 }
 
 export default function IncidentDetailPage() {
@@ -139,26 +156,6 @@ export default function IncidentDetailPage() {
   const [incident, setIncident] = useState<IncidentReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-
-  useEffect(() => {
-    if (params.id) {
-      fetchIncident(params.id as string)
-    }
-  }, [params.id])
-
-  // Redirect if not authenticated
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    )
-  }
-
-  if (!session) {
-    router.push("/auth/signin")
-    return null
-  }
 
   const fetchIncident = async (id: string) => {
     try {
@@ -178,6 +175,26 @@ export default function IncidentDetailPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  useEffect(() => {
+    if (params.id) {
+      fetchIncident(params.id as string)
+    }
+  }, [params.id])
+
+  // Redirect if not authenticated
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
+
+  if (!session) {
+    router.push("/auth/signin")
+    return null
   }
 
   if (loading) {
@@ -282,7 +299,7 @@ export default function IncidentDetailPage() {
                   <div className="grid md:grid-cols-2 gap-4 pt-4 border-t">
                     <div className="flex items-center gap-2 text-gray-600">
                       <MapPin className="h-4 w-4" />
-                      <span>{incident.location}</span>
+                      <span>{incident.address}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
                       <Clock className="h-4 w-4" />
@@ -314,6 +331,107 @@ export default function IncidentDetailPage() {
                       <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>Latitude: {incident.latitude}</div>
                         <div>Longitude: {incident.longitude}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Media Attachments */}
+                  {incident.images && incident.images.length > 0 && (
+                    <div className="pt-4 border-t">
+                      <h4 className="font-medium text-gray-900 mb-3">Media Attachments</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {incident.images.map((imageUrl, index) => {
+                          const fileType = getFileType(imageUrl)
+                          return (
+                            <div key={index} className="relative group">
+                              {fileType === 'image' ? (
+                                <div className="relative">
+                                  <img
+                                    src={imageUrl}
+                                    alt={`Incident media ${index + 1}`}
+                                    className="w-full h-48 object-cover rounded-lg border shadow-sm"
+                                    onError={(e) => {
+                                      console.error('Image failed to load:', imageUrl)
+                                      const target = e.currentTarget
+                                      target.style.backgroundColor = '#f3f4f6'
+                                      target.style.display = 'flex'
+                                      target.style.alignItems = 'center'
+                                      target.style.justifyContent = 'center'
+                                      target.innerHTML = '<span style="color: #6b7280; font-size: 14px;">Failed to load image</span>'
+                                    }}
+                                    onLoad={() => {
+                                      console.log('Image loaded successfully:', imageUrl)
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => window.open(imageUrl, '_blank')}
+                                        className="bg-white/90 hover:bg-white text-gray-800"
+                                      >
+                                        <Image className="h-4 w-4 mr-1" />
+                                        View
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => {
+                                          const link = document.createElement('a')
+                                          link.href = imageUrl
+                                          link.download = `incident-image-${index + 1}`
+                                          link.click()
+                                        }}
+                                        className="bg-white/90 hover:bg-white text-gray-800"
+                                      >
+                                        <Download className="h-4 w-4 mr-1" />
+                                        Download
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <video
+                                    src={imageUrl}
+                                    controls
+                                    className="w-full h-48 object-cover rounded-lg border shadow-sm"
+                                    onError={(e) => {
+                                      console.error('Video failed to load:', imageUrl)
+                                    }}
+                                  />
+                                  <div className="absolute top-2 right-2">
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => {
+                                        const link = document.createElement('a')
+                                        link.href = imageUrl
+                                        link.download = `incident-video-${index + 1}`
+                                        link.click()
+                                      }}
+                                      className="bg-white/90 hover:bg-white text-gray-800"
+                                    >
+                                      <Download className="h-4 w-4 mr-1" />
+                                      Download
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                                {fileType === 'image' ? (
+                                  <Image className="h-4 w-4" />
+                                ) : (
+                                  <Video className="h-4 w-4" />
+                                )}
+                                <span>
+                                  {fileType === 'image' ? 'Image' : 'Video'} {index + 1}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )}

@@ -350,14 +350,14 @@ export default function ReportIncidentPage() {
                 >
                   <MapPin className="h-4 w-4" />
                 </Button>
-                {/* <Button
+                <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowMap(!showMap)}
                   className="shrink-0"
                 >
                   {showMap ? "Hide Map" : "Show Map"}
-                </Button> */}
+                </Button>
               </div>
               {showMap && (
                 <div className="mt-4">

@@ -5,9 +5,10 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     
     if (!session?.user) {
@@ -37,7 +38,7 @@ export async function POST(
 
     // Verify incident exists
     const incident = await prisma.incidentReport.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!incident) {
@@ -49,7 +50,7 @@ export async function POST(
 
     // Update incident status
     const updatedIncident = await prisma.incidentReport.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: status,
         updatedAt: new Date()
@@ -59,7 +60,7 @@ export async function POST(
     // Create response record for status update
     await prisma.response.create({
       data: {
-        incidentReportId: params.id,
+        incidentReportId: id,
         responderId: session.user.id,
         message: `Status updated to ${status}: ${message}`,
         createdAt: new Date()

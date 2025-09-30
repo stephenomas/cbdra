@@ -5,9 +5,10 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     
     if (!session?.user) {
@@ -28,7 +29,7 @@ export async function POST(
 
     // Verify incident exists and is resolved
     const incident = await prisma.incidentReport.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!incident) {
@@ -48,7 +49,7 @@ export async function POST(
     // Create feedback as a response
     const feedback = await prisma.response.create({
       data: {
-        incidentReportId: params.id,
+        incidentReportId: id,
         responderId: session.user.id,
         message: `Feedback (Rating: ${rating}/5): ${message}`,
         createdAt: new Date()

@@ -49,7 +49,7 @@ export function ResourceAllocationModal({
     allocatedToId: "",
     resourceType: "",
     description: "",
-    priority: "MEDIUM"
+    priority: 3 // Default to medium priority (1-5 scale)
   })
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export function ResourceAllocationModal({
         allocatedToId: "",
         resourceType: "",
         description: "",
-        priority: "MEDIUM"
+        priority: 3 // Default to medium priority (1-5 scale)
       })
       setError("")
       setSuccess("")
@@ -98,6 +98,11 @@ export function ResourceAllocationModal({
     setError("")
 
     try {
+      console.log("Submitting allocation request:", {
+        incidentId: incident.id,
+        formData: formData
+      })
+
       const response = await fetch(`/api/incidents/${incident.id}/allocate`, {
         method: "POST",
         headers: {
@@ -106,7 +111,12 @@ export function ResourceAllocationModal({
         body: JSON.stringify(formData),
       })
 
+      console.log("Response status:", response.status)
+      console.log("Response headers:", response.headers)
+
       if (response.ok) {
+        const successData = await response.json()
+        console.log("Success response:", successData)
         setSuccess("Resource allocated successfully!")
         setTimeout(() => {
           onSuccess()
@@ -114,9 +124,12 @@ export function ResourceAllocationModal({
         }, 1500)
       } else {
         const errorData = await response.json()
+        console.error("Error response:", errorData)
+        console.error("Full response:", response)
         setError(errorData.error || "Failed to allocate resource")
       }
     } catch (err) {
+      console.error("Fetch error:", err)
       setError("Error allocating resource")
     } finally {
       setLoading(false)
@@ -227,17 +240,18 @@ export function ResourceAllocationModal({
             <div>
               <Label htmlFor="priority" className="text-gray-900 font-medium">Priority</Label>
               <Select
-                value={formData.priority}
-                onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                value={formData.priority.toString()}
+                onValueChange={(value) => setFormData({ ...formData, priority: parseInt(value) })}
               >
                 <SelectTrigger className="bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                  <SelectItem value="LOW" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Low</SelectItem>
-                  <SelectItem value="MEDIUM" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Medium</SelectItem>
-                  <SelectItem value="HIGH" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">High</SelectItem>
-                  <SelectItem value="CRITICAL" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Critical</SelectItem>
+                  <SelectItem value="1" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Low (1)</SelectItem>
+                  <SelectItem value="2" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Low-Medium (2)</SelectItem>
+                  <SelectItem value="3" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Medium (3)</SelectItem>
+                  <SelectItem value="4" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">High (4)</SelectItem>
+                  <SelectItem value="5" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Critical (5)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -15,8 +15,11 @@ export async function POST(
   { params }: RouteParams
 ) {
   const { id } = await params
+  let body: { allocatedToId?: string; resourceType?: string; description?: string; priority?: number } | null = null
+  let session: Awaited<ReturnType<typeof getServerSession>> | null = null
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -30,7 +33,7 @@ export async function POST(
       )
     }
 
-    const body = await request.json()
+    body = await request.json()
     const { allocatedToId, resourceType, description, priority } = body
 
     // Validate required fields
@@ -118,8 +121,15 @@ export async function POST(
 
   } catch (error) {
     console.error("Error allocating resource:", error)
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      incidentId: id,
+      requestBody: body,
+      sessionUser: session?.user
+    })
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

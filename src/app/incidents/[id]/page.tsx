@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -18,7 +19,7 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
-  Image,
+  Image as ImageIcon,
   Video,
   Download,
   MessageSquare,
@@ -215,7 +216,7 @@ export default function IncidentDetailPage() {
 
         if (uploadResponse.ok) {
           const uploadResult = await uploadResponse.json()
-          imageUrls = uploadResult.files.map((file: { url: string }) => file.url)
+          imageUrls = uploadResult.files
         }
       }
 
@@ -265,7 +266,7 @@ export default function IncidentDetailPage() {
 
         if (uploadResponse.ok) {
           const uploadResult = await uploadResponse.json()
-          imageUrls = uploadResult.files.map((file: { url: string }) => file.url)
+          imageUrls = uploadResult.files
         }
       }
 
@@ -618,9 +619,11 @@ export default function IncidentDetailPage() {
                             <div key={index} className="relative group">
                               {fileType === 'image' ? (
                                 <div className="relative">
-                                  <img
+                                  <Image
                                     src={imageUrl}
                                     alt={`Incident media ${index + 1}`}
+                                    width={400}
+                                    height={192}
                                     className="w-full h-48 object-cover rounded-lg border shadow-sm"
                                     onError={(e) => {
                                       console.error('Image failed to load:', imageUrl)
@@ -643,7 +646,7 @@ export default function IncidentDetailPage() {
                                         onClick={() => window.open(imageUrl, '_blank')}
                                         className="bg-white/90 hover:bg-white text-gray-800"
                                       >
-                                        <Image className="h-4 w-4 mr-1" />
+                                        <ImageIcon className="h-4 w-4 mr-1" />
                                         View
                                       </Button>
                                       <Button
@@ -693,7 +696,7 @@ export default function IncidentDetailPage() {
                               )}
                               <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
                                 {fileType === 'image' ? (
-                                  <Image className="h-4 w-4" />
+                                  <ImageIcon className="h-4 w-4" />
                                 ) : (
                                   <Video className="h-4 w-4" />
                                 )}

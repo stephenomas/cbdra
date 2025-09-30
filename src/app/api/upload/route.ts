@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { writeFile } from "fs/promises"
-import { join } from "path"
+import { PutObjectCommand } from "@aws-sdk/client-s3"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
+import { s3Client, AWS_BUCKET } from "@/lib/aws"
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,15 +57,22 @@ export async function POST(request: NextRequest) {
       const timestamp = Date.now()
       const randomString = Math.random().toString(36).substring(2, 15)
       const extension = file.name.split('.').pop()
-      const filename = `${timestamp}_${randomString}.${extension}`
+      const filename = `incidents/${timestamp}_${randomString}.${extension}`
 
-      // Save file to public/uploads/incidents
-      const uploadPath = join(process.cwd(), "public", "uploads", "incidents", filename)
-      await writeFile(uploadPath, buffer)
+      // Upload to AWS S3
+      const uploadCommand = new PutObjectCommand({
+        Bucket: AWS_BUCKET,
+        Key: filename,
+        Body: buffer,
+        ContentType: file.type,
+        ACL: "public-read", // Make files publicly accessible
+      })
 
-      // Store the public URL
-      const publicUrl = `/uploads/incidents/${filename}`
-      uploadedFiles.push(publicUrl)
+      await s3Client.send(uploadCommand)
+
+      // Generate S3 URL
+      const s3Url = `https://${AWS_BUCKET}.s3.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${filename}`
+      uploadedFiles.push(s3Url)
     }
 
     return NextResponse.json({ 

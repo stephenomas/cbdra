@@ -53,11 +53,11 @@ export function Sidebar({ className }: SidebarProps) {
         href: "/incidents",
         icon: AlertTriangle,
       },
-      {
-        name: "Volunteer",
-        href: "/dashboard/volunteer",
-        icon: Shield,
-      },
+      // {
+      //   name: "Volunteer",
+      //   href: "/dashboard/volunteer",
+      //   icon: Shield,
+      // },
     ]
 
     // Add "Report Incident" only for community users

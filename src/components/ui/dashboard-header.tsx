@@ -32,7 +32,7 @@ const mockNotifications: Notification[] = [
     title: "Emergency Alert",
     message: "Flood warning issued for downtown area",
     time: "5 min ago",
-    read: false
+    read: true
   },
   {
     id: "2",
@@ -40,7 +40,7 @@ const mockNotifications: Notification[] = [
     title: "Volunteer Request",
     message: "Help needed for community cleanup event",
     time: "1 hour ago",
-    read: false
+    read: true
   },
   {
     id: "3",

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, MapPin, AlertTriangle, Upload, X, Image, Video } from "lucide-react"
+import { Loader2, MapPin, AlertTriangle, Upload, X, Image as ImageIcon, Video } from "lucide-react"
 import { DashboardLayout } from "@/components/ui/dashboard-layout"
 import { GoogleMap } from "@/components/ui/google-map"
 
@@ -440,9 +441,11 @@ export default function ReportIncidentPage() {
                     <div key={index} className="relative group">
                       {getFileType(fileUrl) === 'image' ? (
                         <div className="relative">
-                          <img
+                          <Image
                             src={fileUrl}
                             alt={`Upload ${index + 1}`}
+                            width={200}
+                            height={96}
                             className="w-full h-24 object-cover rounded-lg border"
                             onError={(e) => {
                               console.error('Image failed to load:', fileUrl)
@@ -458,7 +461,7 @@ export default function ReportIncidentPage() {
                             }}
                           />
                           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
-                            <Image className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ImageIcon className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                         </div>
                       ) : getFileType(fileUrl) === 'video' ? (

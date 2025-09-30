@@ -5,9 +5,9 @@ import { prisma } from "@/lib/prisma"
 import { IncidentStatus } from "@prisma/client"
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 // GET /api/incidents/[id] - Get specific incident
@@ -15,6 +15,7 @@ export async function GET(
   request: NextRequest,
   { params }: RouteParams
 ) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     
@@ -23,7 +24,7 @@ export async function GET(
     }
 
     const incident = await prisma.incidentReport.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         reporter: {
           select: {
@@ -93,11 +94,12 @@ export async function GET(
   }
 }
 
-// PATCH /api/incidents/[id] - Update incident status (Admin only)
+// PATCH /api/incidents/[id] - Update incident (Admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: RouteParams
 ) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     
@@ -105,41 +107,55 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Only admin can update incident status
+    // Only admin can update incidents
     if (session.user.role !== "ADMIN") {
       return NextResponse.json(
-        { error: "Only administrators can update incident status" },
+        { error: "Only administrators can update incidents" },
         { status: 403 }
       )
     }
 
     const body = await request.json()
-    const { status, verifiedBy } = body
+    const { status, severity, assignedTo } = body
 
-    // Validate status
+    // Validate status if provided
     if (status && !Object.values(IncidentStatus).includes(status)) {
       return NextResponse.json(
-        { error: "Invalid incident status" },
+        { error: "Invalid status" },
         { status: 400 }
+      )
+    }
+
+    // Check if incident exists
+    const existingIncident = await prisma.incidentReport.findUnique({
+      where: { id: id },
+    })
+
+    if (!existingIncident) {
+      return NextResponse.json(
+        { error: "Incident not found" },
+        { status: 404 }
       )
     }
 
     const updateData: {
       status?: IncidentStatus;
-      verifiedBy?: string;
-      verifiedAt?: Date;
+      severity?: number;
+      assignedTo?: string;
     } = {}
 
     if (status) {
       updateData.status = status
-      if (status === IncidentStatus.VERIFIED) {
-        updateData.verifiedBy = session.user.id
-        updateData.verifiedAt = new Date()
-      }
+    }
+    if (severity) {
+      updateData.severity = severity
+    }
+    if (assignedTo) {
+      updateData.assignedTo = assignedTo
     }
 
     const incident = await prisma.incidentReport.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         reporter: {
@@ -169,6 +185,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: RouteParams
 ) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     
@@ -177,7 +194,7 @@ export async function DELETE(
     }
 
     const incident = await prisma.incidentReport.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { reporterId: true }
     })
 
@@ -194,7 +211,7 @@ export async function DELETE(
     }
 
     await prisma.incidentReport.delete({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     return NextResponse.json({ message: "Incident deleted successfully" })

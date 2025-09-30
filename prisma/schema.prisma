@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  COMMUNITY_USER
+  VOLUNTEER
+  NGO
+  GOVERNMENT_AGENCY
+  ADMIN
+}
+
+enum IncidentStatus {
+  PENDING
+  VERIFIED
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+enum IncidentType {
+  FLOOD
+  EARTHQUAKE
+  FIRE
+  STORM
+  LANDSLIDE
+  DROUGHT
+  EPIDEMIC
+  OTHER
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(COMMUNITY_USER)
+  phone         String?
+  address       String?
+  organization  String?   // For NGOs and Government Agencies
+  verified      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  incidentReports IncidentReport[]
+  responses      Response[]
+  allocatedResources ResourceAllocation[] @relation("AllocatedResources")
+  allocatedByAdmin   ResourceAllocation[] @relation("AllocatedByAdmin")
+}
+
+model IncidentReport {
+  id          String        @id @default(cuid())
+  title       String
+  description String        @db.Text
+  type        IncidentType
+  status      IncidentStatus @default(PENDING)
+  latitude    Float?
+  longitude   Float?
+  address     String
+  images      String[]      // Array of image URLs
+  severity    Int           @default(1) // 1-5 scale
+  affectedPeople Int?
+  reporterId  String
+  verifiedBy  String?
+  verifiedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  reporter    User        @relation(fields: [reporterId], references: [id])
+  responses   Response[]
+  resourceAllocations ResourceAllocation[]
+}
+
+model Response {
+  id               String   @id @default(cuid())
+  incidentReportId String
+  responderId      String
+  message          String   @db.Text
+  resourcesOffered String?  @db.Text
+  contactInfo      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  incidentReport IncidentReport @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
+  responder      User           @relation(fields: [responderId], references: [id])
+}
+
+model ResourceAllocation {
+  id               String   @id @default(cuid())
+  incidentReportId String
+  allocatedToId    String
+  allocatedById    String   // Admin who made the allocation
+  resourceType     String   // Type of resource (personnel, equipment, etc.)
+  description      String?  @db.Text
+  priority         Int      @default(1) // 1-5 scale
+  status           String   @default("ASSIGNED") // ASSIGNED, ACCEPTED, DECLINED, COMPLETED
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  incidentReport IncidentReport @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
+  allocatedTo    User           @relation("AllocatedResources", fields: [allocatedToId], references: [id])
+  allocatedBy    User           @relation("AllocatedByAdmin", fields: [allocatedById], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

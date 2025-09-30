@@ -20,7 +20,10 @@ import {
   XCircle,
   Image,
   Video,
-  Download
+  Download,
+  MessageSquare,
+  Edit,
+  Upload
 } from "lucide-react"
 
 interface IncidentReport {
@@ -156,24 +159,138 @@ export default function IncidentDetailPage() {
   const [incident, setIncident] = useState<IncidentReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [showStatusUpdate, setShowStatusUpdate] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [statusUpdateData, setStatusUpdateData] = useState({
+    status: "",
+    message: "",
+    images: [] as File[]
+  })
+  const [feedbackData, setFeedbackData] = useState({
+    message: "",
+    rating: 5,
+    images: [] as File[]
+  })
+  const [uploading, setUploading] = useState(false)
 
   const fetchIncident = async (id: string) => {
     try {
       setLoading(true)
+      setError("")
+      
       const response = await fetch(`/api/incidents/${id}`)
       
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to fetch incident")
+        throw new Error("Failed to fetch incident")
       }
-
+      
       const data = await response.json()
       setIncident(data)
     } catch (error) {
       console.error("Error fetching incident:", error)
-      setError(error instanceof Error ? error.message : "Failed to fetch incident")
+      setError("Failed to load incident details")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleStatusUpdate = async () => {
+    if (!statusUpdateData.status || !statusUpdateData.message) return
+
+    try {
+      setUploading(true)
+      
+      // Upload images if any
+      let imageUrls: string[] = []
+      if (statusUpdateData.images.length > 0) {
+        const formData = new FormData()
+        statusUpdateData.images.forEach(file => {
+          formData.append('files', file)
+        })
+
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (uploadResponse.ok) {
+          const uploadResult = await uploadResponse.json()
+          imageUrls = uploadResult.files.map((file: { url: string }) => file.url)
+        }
+      }
+
+      // Submit status update
+      const response = await fetch(`/api/incidents/${incident?.id}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: statusUpdateData.status,
+          message: statusUpdateData.message,
+          images: imageUrls
+        })
+      })
+
+      if (response.ok) {
+        setShowStatusUpdate(false)
+        setStatusUpdateData({ status: "", message: "", images: [] })
+        fetchIncident(params.id as string) // Refresh incident data
+      }
+    } catch (error) {
+      console.error("Error updating status:", error)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleFeedback = async () => {
+    if (!feedbackData.message) return
+
+    try {
+      setUploading(true)
+      
+      // Upload images if any
+      let imageUrls: string[] = []
+      if (feedbackData.images.length > 0) {
+        const formData = new FormData()
+        feedbackData.images.forEach(file => {
+          formData.append('files', file)
+        })
+
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (uploadResponse.ok) {
+          const uploadResult = await uploadResponse.json()
+          imageUrls = uploadResult.files.map((file: { url: string }) => file.url)
+        }
+      }
+
+      // Submit feedback
+      const response = await fetch(`/api/incidents/${incident?.id}/feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: feedbackData.message,
+          rating: feedbackData.rating,
+          images: imageUrls
+        })
+      })
+
+      if (response.ok) {
+        setShowFeedback(false)
+        setFeedbackData({ message: "", rating: 5, images: [] })
+        fetchIncident(params.id as string) // Refresh incident data
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error)
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -253,18 +370,173 @@ export default function IncidentDetailPage() {
     <DashboardLayout>
       <div className="p-6">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Link href="/incidents">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Incidents
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Link href="/incidents">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Incidents
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Incident Details</h1>
+              <p className="text-gray-600">View detailed information about this incident report</p>
+            </div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowStatusUpdate(true)}
+              variant="outline"
+              size="sm"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Update Status
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Incident Details</h1>
-            <p className="text-gray-600">View detailed information about this incident report</p>
+            
+            {incident?.status === "RESOLVED" && (
+              <Button 
+                onClick={() => setShowFeedback(true)}
+                variant="outline"
+                size="sm"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Provide Feedback
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* Status Update Modal */}
+        {showStatusUpdate && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Update Incident Status</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">New Status</label>
+                  <select 
+                    value={statusUpdateData.status}
+                    onChange={(e) => setStatusUpdateData({...statusUpdateData, status: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="">Select Status</option>
+                    <option value="VERIFIED">Verified</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="RESOLVED">Resolved</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Update Message</label>
+                  <textarea 
+                    value={statusUpdateData.message}
+                    onChange={(e) => setStatusUpdateData({...statusUpdateData, message: e.target.value})}
+                    className="w-full p-2 border rounded-md h-24"
+                    placeholder="Describe the status update..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Attach Images (Optional)</label>
+                  <input 
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => setStatusUpdateData({...statusUpdateData, images: Array.from(e.target.files || [])})}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2 mt-6">
+                <Button 
+                  onClick={handleStatusUpdate}
+                  disabled={!statusUpdateData.status || !statusUpdateData.message || uploading}
+                  className="flex-1"
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Update Status
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowStatusUpdate(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Feedback Modal */}
+        {showFeedback && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Provide Feedback</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Rating</label>
+                  <select 
+                    value={feedbackData.rating}
+                    onChange={(e) => setFeedbackData({...feedbackData, rating: parseInt(e.target.value)})}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value={5}>5 - Excellent</option>
+                    <option value={4}>4 - Good</option>
+                    <option value={3}>3 - Average</option>
+                    <option value={2}>2 - Poor</option>
+                    <option value={1}>1 - Very Poor</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Feedback Message</label>
+                  <textarea 
+                    value={feedbackData.message}
+                    onChange={(e) => setFeedbackData({...feedbackData, message: e.target.value})}
+                    className="w-full p-2 border rounded-md h-24"
+                    placeholder="Share your feedback about the incident resolution..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Attach Images (Optional)</label>
+                  <input 
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => setFeedbackData({...feedbackData, images: Array.from(e.target.files || [])})}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2 mt-6">
+                <Button 
+                  onClick={handleFeedback}
+                  disabled={!feedbackData.message || uploading}
+                  className="flex-1"
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Submit Feedback
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowFeedback(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}

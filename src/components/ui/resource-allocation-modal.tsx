@@ -15,6 +15,7 @@ interface User {
   name: string
   email: string
   role: string
+  availableResources?: string | null
 }
 
 interface IncidentReport {
@@ -216,26 +217,34 @@ export function ResourceAllocationModal({
             </div>
 
             <div>
-              <Label htmlFor="resourceType" className="text-gray-900 font-medium">Resource Type *</Label>
-              <Select
+              <Label htmlFor="resourceType" className="text-gray-900 font-medium">Resources Need *</Label>
+              <Textarea
+                id="resourceType"
+                placeholder="Describe resources needed (free text)"
                 value={formData.resourceType}
-                onValueChange={(value) => setFormData({ ...formData, resourceType: value })}
-              >
-                <SelectTrigger className="bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="Select resource type" className="text-gray-500" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                  <SelectItem value="PERSONNEL" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Personnel</SelectItem>
-                  <SelectItem value="EQUIPMENT" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Equipment</SelectItem>
-                  <SelectItem value="VEHICLE" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Vehicle</SelectItem>
-                  <SelectItem value="MEDICAL" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Medical Supplies</SelectItem>
-                  <SelectItem value="FOOD" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Food & Water</SelectItem>
-                  <SelectItem value="SHELTER" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Shelter</SelectItem>
-                  <SelectItem value="COMMUNICATION" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Communication</SelectItem>
-                  <SelectItem value="OTHER" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">Other</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(e) => setFormData({ ...formData, resourceType: e.target.value })}
+                rows={3}
+                className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
+              />
             </div>
+
+            {formData.allocatedToId && (
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="font-medium mb-2 text-gray-900">Selected User’s Available Resources</h4>
+                {(() => {
+                  const selected = users.find(u => u.id === formData.allocatedToId)
+                  if (!selected) return (
+                    <p className="text-sm text-gray-500">No user selected.</p>
+                  )
+                  const resources = selected.availableResources?.trim()
+                  return resources ? (
+                    <p className="text-sm text-gray-700 whitespace-pre-line">{resources}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500">No available resources provided by this user.</p>
+                  )
+                })()}
+              </div>
+            )}
 
             <div>
               <Label htmlFor="priority" className="text-gray-900 font-medium">Priority</Label>

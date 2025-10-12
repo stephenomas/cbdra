@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter, usePathname } from "next/navigation"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { 
   AlertTriangle, 
@@ -139,9 +140,19 @@ export function Sidebar({ className }: SidebarProps) {
             <div className="p-4 border-b bg-gray-50">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-gray-600" />
-                  </div>
+                  {session.user.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || "User avatar"}
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-gray-600" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">

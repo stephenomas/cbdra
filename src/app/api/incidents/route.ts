@@ -22,12 +22,17 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause based on user role
-    interface WhereClause {
+    type WhereClause = {
       reporterId?: string;
       status?: IncidentStatus;
       type?: IncidentType;
+      resourceAllocations?: {
+        some: {
+          allocatedToId: string;
+        }
+      };
     }
-    
+
     let whereClause: WhereClause = {}
 
     if (session.user.role === "COMMUNITY_USER") {
@@ -37,8 +42,14 @@ export async function GET(request: NextRequest) {
       // Admin can see all reports
       whereClause = {}
     } else {
-      // Volunteers, NGOs, and Government agencies can see all reports
-      whereClause = {}
+      // Volunteers, NGOs, and Government agencies see incidents assigned to them
+      whereClause = {
+        resourceAllocations: {
+          some: {
+            allocatedToId: session.user.id,
+          }
+        }
+      }
     }
 
     // Add filters

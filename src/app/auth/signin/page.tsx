@@ -38,7 +38,16 @@ export default function SignIn() {
 
       if (result?.error) {
         console.error('Sign-in failed:', result.error)
-        setError('Invalid email or password')
+        // Show specific error if email verification is required
+        if (typeof result.error === 'string' && result.error.includes('Please verify your email')) {
+          setError('Please verify your email before signing in.')
+        } else if (result.error === 'CredentialsSignin' || (typeof result.error === 'string' && result.error.includes('CredentialsSignin'))) {
+          setError('Invalid email or password')
+        } else if (typeof result.error === 'string') {
+          setError(result.error)
+        } else {
+          setError('Sign-in failed. Please try again.')
+        }
       } else if (result?.ok) {
         console.log('Sign-in successful, getting session...')
         

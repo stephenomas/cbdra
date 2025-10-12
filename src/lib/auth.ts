@@ -28,6 +28,11 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Check if email is verified (admins are exempt)
+        if (!user.emailVerified && user.role !== "ADMIN") {
+          throw new Error("Please verify your email before signing in.")
+        }
+
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
           user.password
@@ -42,6 +47,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          image: user.image || undefined,
         }
       }
     })
@@ -53,13 +59,35 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role
+        token.image = user.image ?? null
       }
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.sub!
-        session.user.role = token.role
+        // Fetch latest user data to keep session in sync (e.g., avatar changes)
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub! },
+            select: { image: true, role: true, name: true }
+          })
+          if (dbUser) {
+            session.user.role = dbUser.role
+            session.user.image = dbUser.image ?? null
+            if (dbUser.name) {
+              session.user.name = dbUser.name
+            }
+          } else {
+            // Fallback to token values if user not found
+            session.user.role = token.role
+            session.user.image = token.image ?? null
+          }
+        } catch {
+          // On error, keep existing token-derived values
+          session.user.role = token.role
+          session.user.image = token.image ?? null
+        }
       }
       return session
     }

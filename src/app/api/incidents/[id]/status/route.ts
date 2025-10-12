@@ -27,7 +27,7 @@ export async function POST(
       )
     }
 
-    const { status, message, images } = await request.json()
+    const { status, message } = await request.json()
 
     if (!status || !message) {
       return NextResponse.json(

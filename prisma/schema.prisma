@@ -65,48 +65,54 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          UserRole  @default(COMMUNITY_USER)
-  phone         String?
-  address       String?
-  organization  String?   // For NGOs and Government Agencies
-  verified      Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  name               String?
+  email              String    @unique
+  emailVerified      DateTime?
+  image              String?
+  password           String?
+  role               UserRole  @default(COMMUNITY_USER)
+  phone              String?
+  address            String?
+  state              String?
+  country            String?
+  organization       String? // For NGOs and Government Agencies
+  availableResources String?   @db.Text // Resources user can provide (non-community roles)
+  verified           Boolean   @default(false)
+  otp                String? // OTP for email verification
+  otpExpiry          DateTime? // OTP expiry time
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  accounts       Account[]
-  sessions       Session[]
-  incidentReports IncidentReport[]
-  responses      Response[]
+  accounts           Account[]
+  sessions           Session[]
+  incidentReports    IncidentReport[]
+  responses          Response[]
   allocatedResources ResourceAllocation[] @relation("AllocatedResources")
   allocatedByAdmin   ResourceAllocation[] @relation("AllocatedByAdmin")
+  notifications      Notification[]
 }
 
 model IncidentReport {
-  id          String        @id @default(cuid())
-  title       String
-  description String        @db.Text
-  type        IncidentType
-  status      IncidentStatus @default(PENDING)
-  latitude    Float?
-  longitude   Float?
-  address     String
-  images      String[]      // Array of image URLs
-  severity    Int           @default(1) // 1-5 scale
+  id             String         @id @default(cuid())
+  title          String
+  description    String         @db.Text
+  type           IncidentType
+  status         IncidentStatus @default(PENDING)
+  latitude       Float?
+  longitude      Float?
+  address        String
+  images         String[] // Array of image URLs
+  severity       Int            @default(1) // 1-5 scale
   affectedPeople Int?
-  reporterId  String
-  verifiedBy  String?
-  verifiedAt  DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  reporterId     String
+  verifiedBy     String?
+  verifiedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
-  reporter    User        @relation(fields: [reporterId], references: [id])
-  responses   Response[]
+  reporter            User                 @relation(fields: [reporterId], references: [id])
+  responses           Response[]
   resourceAllocations ResourceAllocation[]
 }
 
@@ -128,8 +134,8 @@ model ResourceAllocation {
   id               String   @id @default(cuid())
   incidentReportId String
   allocatedToId    String
-  allocatedById    String   // Admin who made the allocation
-  resourceType     String   // Type of resource (personnel, equipment, etc.)
+  allocatedById    String // Admin who made the allocation
+  resourceType     String // Type of resource (personnel, equipment, etc.)
   description      String?  @db.Text
   priority         Int      @default(1) // 1-5 scale
   status           String   @default("ASSIGNED") // ASSIGNED, ACCEPTED, DECLINED, COMPLETED
@@ -139,6 +145,7 @@ model ResourceAllocation {
   incidentReport IncidentReport @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
   allocatedTo    User           @relation("AllocatedResources", fields: [allocatedToId], references: [id])
   allocatedBy    User           @relation("AllocatedByAdmin", fields: [allocatedById], references: [id])
+  notifications  Notification[]
 }
 
 model VerificationToken {
@@ -147,4 +154,19 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Notification {
+  id           String   @id @default(cuid())
+  userId       String
+  title        String
+  message      String
+  type         String // alert | info | success
+  read         Boolean  @default(false)
+  incidentId   String?
+  allocationId String?
+  createdAt    DateTime @default(now())
+
+  user       User                @relation(fields: [userId], references: [id])
+  allocation ResourceAllocation? @relation(fields: [allocationId], references: [id])
 }

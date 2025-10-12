@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
 
     const data = await request.formData()
     const files: File[] = data.getAll("files") as File[]
+    const folderParam = data.get("folder") as string | null
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: "No files uploaded" }, { status: 400 })
@@ -25,14 +26,16 @@ export async function POST(request: NextRequest) {
       // Validate file type
       const allowedTypes = [
         "image/jpeg",
-        "image/jpg", 
+        "image/jpg",
         "image/png",
         "image/gif",
         "image/webp",
+        "image/heic",
+        "image/heif",
         "video/mp4",
         "video/webm",
-        "video/ogg"
-      ]
+        "video/ogg",
+      ];
 
       if (!allowedTypes.includes(file.type)) {
         return NextResponse.json(
@@ -57,7 +60,8 @@ export async function POST(request: NextRequest) {
       const timestamp = Date.now()
       const randomString = Math.random().toString(36).substring(2, 15)
       const extension = file.name.split('.').pop()
-      const filename = `incidents/${timestamp}_${randomString}.${extension}`
+      const folder = (folderParam && folderParam.trim()) || "incidents"
+      const filename = `${folder}/${timestamp}_${randomString}.${extension}`
 
       // Upload to AWS S3
       const uploadCommand = new PutObjectCommand({

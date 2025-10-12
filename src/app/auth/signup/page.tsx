@@ -6,15 +6,22 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AuthIllustration } from '@/components/ui/auth-illustration'
+import OTPVerification from '@/components/auth/OTPVerification'
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     role: '',
+    phone: '',
+    address: '',
+    state: '',
+    country: '',
+    availableResources: '',
     password: '',
     confirmPassword: ''
   })
@@ -22,6 +29,8 @@ export default function SignUp() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showOTPVerification, setShowOTPVerification] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,6 +67,11 @@ export default function SignUp() {
           name: formData.name,
           email: formData.email,
           role: formData.role,
+          phone: formData.phone,
+          address: formData.address,
+          state: formData.state,
+          country: formData.country,
+          availableResources: formData.availableResources,
           password: formData.password,
         }),
       })
@@ -65,7 +79,12 @@ export default function SignUp() {
       const data = await response.json()
 
       if (response.ok) {
-        router.push('/auth/signin?message=Account created successfully. Please sign in.')
+        if (data.requiresVerification) {
+          setUserEmail(data.email)
+          setShowOTPVerification(true)
+        } else {
+          router.push('/auth/signin?message=Account created successfully. Please sign in.')
+        }
       } else {
         setError(data.error || 'Account creation failed')
       }
@@ -76,7 +95,7 @@ export default function SignUp() {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -88,6 +107,16 @@ export default function SignUp() {
       ...formData,
       [field]: value
     })
+  }
+
+  const handleBackToSignup = () => {
+    setShowOTPVerification(false)
+    setUserEmail('')
+  }
+
+  // Show OTP verification screen if needed
+  if (showOTPVerification) {
+    return <OTPVerification email={userEmail} onBack={handleBackToSignup} />
   }
 
   return (
@@ -179,6 +208,81 @@ export default function SignUp() {
               </div>
 
               <div>
+                <Label htmlFor="phone" className="text-gray-700 font-medium">
+                  Phone Number
+                </Label>
+                <div className="mt-2">
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    required
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Enter your phone number"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="address" className="text-gray-700 font-medium">
+                  Address
+                </Label>
+                <div className="mt-2">
+                  <Input
+                    id="address"
+                    name="address"
+                    type="text"
+                    autoComplete="street-address"
+                    required
+                    value={formData.address}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Enter your address"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="state" className="text-gray-700 font-medium">
+                    State/Province
+                  </Label>
+                  <div className="mt-2">
+                    <Input
+                      id="state"
+                      name="state"
+                      type="text"
+                      required
+                      value={formData.state}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Enter your state or province"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="country" className="text-gray-700 font-medium">
+                    Country
+                  </Label>
+                  <div className="mt-2">
+                    <Input
+                      id="country"
+                      name="country"
+                      type="text"
+                      required
+                      value={formData.country}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Enter your country"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
                 <Label htmlFor="role" className="text-gray-700 font-medium">
                   Role
                 </Label>
@@ -196,6 +300,26 @@ export default function SignUp() {
                   </Select>
                 </div>
               </div>
+
+              {formData.role && formData.role !== 'COMMUNITY_USER' && (
+                <div>
+                  <Label htmlFor="availableResources" className="text-gray-700 font-medium">
+                    Available Resources
+                  </Label>
+                  <div className="mt-2">
+                    <Textarea
+                      id="availableResources"
+                      name="availableResources"
+                      required
+                      value={formData.availableResources}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="List resources you can provide (e.g., shelter, food, medical aid)"
+                      rows={4}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="password" className="text-gray-700 font-medium">
@@ -317,6 +441,7 @@ export default function SignUp() {
                 </Link>
               </div>
             </div>
+
           </Card>
 
           <div className="mt-8 text-center text-sm text-gray-500">
@@ -328,9 +453,9 @@ export default function SignUp() {
             <Link href="/privacy" className="text-blue-600 hover:text-blue-500 transition-colors">
               Privacy Policy
             </Link>
-          </div>
-        </div>
+              </div>
       </div>
+    </div>
     </div>
   )
 }

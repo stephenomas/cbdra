@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sendAllocationEmail } from "@/lib/email"
 import { Session } from "next-auth"
 
 interface RouteParams {
@@ -73,7 +74,7 @@ export async function POST(
     // Check if user to allocate exists and has appropriate role
     const userToAllocate = await prisma.user.findUnique({
       where: { id: allocatedToId },
-      select: { id: true, name: true, role: true, organization: true }
+      select: { id: true, name: true, role: true, organization: true, email: true }
     })
 
     if (!userToAllocate) {
@@ -106,6 +107,7 @@ export async function POST(
             name: true,
             role: true,
             organization: true,
+            email: true,
           }
         },
         allocatedBy: {
@@ -125,6 +127,36 @@ export async function POST(
         }
       }
     })
+
+    // Persist a notification for the allocated user
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: allocatedToId,
+          title: "New Incident Assigned",
+          message: `${allocation.incidentReport.title} (Ref ${allocation.incidentReport.id})` + (allocation.priority ? ` • Priority ${allocation.priority}` : ""),
+          type: "alert",
+          incidentId: allocation.incidentReport.id,
+          allocationId: allocation.id,
+          read: false,
+        }
+      })
+    } catch (err) {
+      console.error('Failed to persist notification for allocation:', err)
+    }
+
+    // Fire-and-forget email notification to allocated user
+    if (userToAllocate?.email) {
+      sendAllocationEmail({
+        toEmail: userToAllocate.email,
+        toName: userToAllocate.name || undefined,
+        incidentTitle: allocation.incidentReport.title,
+        incidentId: allocation.incidentReport.id,
+        allocationNote: description || undefined,
+      }).catch((err) => {
+        console.error('Failed to send allocation email notification:', err)
+      })
+    }
 
     return NextResponse.json(allocation, { status: 201 })
 

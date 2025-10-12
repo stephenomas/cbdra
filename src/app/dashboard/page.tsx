@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const [userIncidentCount, setUserIncidentCount] = useState(0);
   const [recentIncidents, setRecentIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [allocationStats, setAllocationStats] = useState<{ total: number; pending: number; completed: number } | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -29,36 +30,59 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (session?.user?.id) {
-      fetchUserStats();
-      fetchRecentIncidents();
+      const load = async () => {
+        try {
+          // User stats
+          try {
+            const response = await fetch(`/api/incidents/user-stats`);
+            if (response.ok) {
+              const data = await response.json();
+              setUserIncidentCount(data.count || 0);
+            }
+          } catch (error) {
+            console.error("Error fetching user stats:", error);
+          }
+
+          // Allocation stats (role-based)
+          try {
+            const role = session?.user?.role;
+            if (role === "VOLUNTEER" || role === "NGO" || role === "GOVERNMENT_AGENCY") {
+              const response = await fetch(`/api/resource-allocations/stats`);
+              if (response.ok) {
+                const data = await response.json();
+                setAllocationStats({
+                  total: data.total || 0,
+                  pending: data.pending || 0,
+                  completed: data.completed || 0,
+                });
+              }
+            } else {
+              setAllocationStats(null);
+            }
+          } catch (error) {
+            console.error("Error fetching allocation stats:", error);
+          }
+
+          // Recent incidents
+          try {
+            const response = await fetch(`/api/incidents?limit=5`);
+            if (response.ok) {
+              const data = await response.json();
+              setRecentIncidents(data.incidents || []);
+            }
+          } catch (error) {
+            console.error("Error fetching recent incidents:", error);
+          } finally {
+            setLoading(false);
+          }
+        } catch (err) {
+          // noop; individual blocks already handle errors
+        }
+      };
+
+      load();
     }
   }, [session]);
-
-  const fetchUserStats = async () => {
-    try {
-      const response = await fetch(`/api/incidents/user-stats`);
-      if (response.ok) {
-        const data = await response.json();
-        setUserIncidentCount(data.count || 0);
-      }
-    } catch (error) {
-      console.error("Error fetching user stats:", error);
-    }
-  };
-
-  const fetchRecentIncidents = async () => {
-    try {
-      const response = await fetch(`/api/incidents?limit=5`);
-      if (response.ok) {
-        const data = await response.json();
-        setRecentIncidents(data.incidents || []);
-      }
-    } catch (error) {
-      console.error("Error fetching recent incidents:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (status === "loading") {
     return (
@@ -88,23 +112,89 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Link href="/incidents/report">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+        {/* Allocation Summary for NGO/Volunteer/Government Agency */}
+        {allocationStats && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center text-lg">
-                  <Plus className="h-5 w-5 text-red-600 mr-2" />
-                  Report Incident
+                  Allocated Incidents
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
-                  Report a new emergency or disaster incident in your area
-                </CardDescription>
+                <div className="text-2xl font-bold text-gray-900 mb-1">
+                  {allocationStats.total}
+                </div>
+                <CardDescription>Total allocations since inception</CardDescription>
               </CardContent>
             </Card>
-          </Link>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-lg">
+                  Pending Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900 mb-1">
+                  {allocationStats.pending}
+                </div>
+                <CardDescription>Awaiting action (assigned)</CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-lg">
+                  Closed Requests Resolved
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900 mb-1">
+                  {allocationStats.completed}
+                </div>
+                <CardDescription>Completed allocations</CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {session.user.role === "COMMUNITY_USER" && (
+            <>
+              <Link href="/incidents/report">
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center text-lg">
+                      <Plus className="h-5 w-5 text-red-600 mr-2" />
+                      Report Incident
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>
+                      Report a new emergency or disaster incident in your area
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center text-lg">
+                    <AlertTriangle className="h-5 w-5 text-orange-600 mr-2" />
+                    Your Incident Reports
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
+                    {userIncidentCount}
+                  </div>
+                  <CardDescription></CardDescription>
+                </CardContent>
+              </Card>
+            </>
+          )}
 
           <Link href="/incidents">
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
@@ -116,28 +206,13 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  See active incidents and emergency situations nearby
+                  {session.user.role === "COMMUNITY_USER"
+                    ? "See active incidents and emergency situations nearby"
+                    : "See incidents assigned to you"}
                 </CardDescription>
               </CardContent>
             </Card>
           </Link>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center text-lg">
-                <AlertTriangle className="h-5 w-5 text-orange-600 mr-2" />
-                Your Incident Reports
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900 mb-1">
-                {userIncidentCount}
-              </div>
-              <CardDescription>
-          
-              </CardDescription>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Recent Activity */}

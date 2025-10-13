@@ -78,6 +78,11 @@ model User {
   country            String?
   organization       String? // For NGOs and Government Agencies
   availableResources String?   @db.Text // Resources user can provide (non-community roles)
+  emergencyContactName         String?
+  emergencyContactPhone        String?
+  emergencyContactAddress      String?
+  emergencyContactRelationship String?
+  distanceWillingToTravel      Int?
   verified           Boolean   @default(false)
   otp                String? // OTP for email verification
   otpExpiry          DateTime? // OTP expiry time

@@ -3,7 +3,23 @@ import { UserRole } from "@prisma/client"
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, role, phone, address, state, country, organization, availableResources } = await request.json()
+    const { 
+      name,
+      email,
+      password,
+      role,
+      phone,
+      address,
+      state,
+      country,
+      organization,
+      availableResources,
+      emergencyContactName,
+      emergencyContactPhone,
+      emergencyContactAddress,
+      emergencyContactRelationship,
+      distanceWillingToTravel
+    } = await request.json()
 
     // Validate input
     if (!name || !email || !password || !role) {
@@ -63,7 +79,12 @@ export async function POST(request: NextRequest) {
         state,
         country,
         organization,
-        availableResources
+        availableResources,
+        emergencyContactName,
+        emergencyContactPhone,
+        emergencyContactAddress,
+        emergencyContactRelationship,
+        distanceWillingToTravel
       })
     })
 

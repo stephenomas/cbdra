@@ -22,7 +22,9 @@ export async function GET(_request: NextRequest) {
         name: true,
         email: true,
         role: true,
+        organization: true,
         availableResources: true,
+        verified: true,
         createdAt: true,
       },
       orderBy: {

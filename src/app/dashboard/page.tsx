@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [recentIncidents, setRecentIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [allocationStats, setAllocationStats] = useState<{ total: number; pending: number; completed: number } | null>(null);
+  const [userVerified, setUserVerified] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -32,6 +33,17 @@ export default function DashboardPage() {
     if (session?.user?.id) {
       const load = async () => {
         try {
+          // Profile verification status
+          try {
+            const res = await fetch(`/api/user/profile`);
+            if (res.ok) {
+              const data = await res.json();
+              setUserVerified(Boolean(data.user?.verified));
+            }
+          } catch (error) {
+            console.error("Error fetching profile:", error);
+          }
+
           // User stats
           try {
             const response = await fetch(`/api/incidents/user-stats`);
@@ -111,6 +123,12 @@ export default function DashboardPage() {
             response network.
           </p>
         </div>
+
+        {(session.user.role === "VOLUNTEER" || session.user.role === "NGO" || session.user.role === "GOVERNMENT_AGENCY") && userVerified === false && (
+          <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-yellow-800">
+            Your account is pending admin verification. Access will unlock once approved.
+          </div>
+        )}
 
         {/* Allocation Summary for NGO/Volunteer/Government Agency */}
         {allocationStats && (

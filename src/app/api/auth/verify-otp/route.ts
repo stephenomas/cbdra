@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
       where: { email },
       data: {
         emailVerified: new Date(),
-        verified: true,
         otp: null, // Clear OTP
         otpExpiry: null // Clear OTP expiry
       }

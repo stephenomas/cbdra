@@ -15,6 +15,7 @@ interface User {
   name: string
   email: string
   role: string
+  verified: boolean
   availableResources?: string | null
 }
 
@@ -76,7 +77,9 @@ export function ResourceAllocationModal({
         const eligibleUsers = data.filter((user: User) => 
           user.role !== "COMMUNITY_USER" && user.role !== "ADMIN"
         )
-        setUsers(eligibleUsers)
+        // Only include users that have been verified
+        const verifiedEligibleUsers = eligibleUsers.filter((user: User) => user.verified === true)
+        setUsers(verifiedEligibleUsers)
       } else {
         setError("Failed to fetch users")
       }
@@ -217,7 +220,7 @@ export function ResourceAllocationModal({
             </div>
 
             <div>
-              <Label htmlFor="resourceType" className="text-gray-900 font-medium">Resources Need *</Label>
+              <Label htmlFor="resourceType" className="text-gray-900 font-medium">Resources Needed *</Label>
               <Textarea
                 id="resourceType"
                 placeholder="Describe resources needed (free text)"

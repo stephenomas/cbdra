@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DashboardLayout } from "@/components/ui/dashboard-layout"
+import { ResourceAllocationModal } from "@/components/ui/resource-allocation-modal"
 import { 
   AlertTriangle, 
   ArrowLeft, 
@@ -26,6 +27,7 @@ import {
   Edit,
   Upload
 } from "lucide-react"
+import { Users } from "lucide-react"
 
 interface IncidentReport {
   id: string
@@ -173,6 +175,7 @@ export default function IncidentDetailPage() {
     images: [] as File[]
   })
   const [uploading, setUploading] = useState(false)
+  const [showResourceModal, setShowResourceModal] = useState(false)
 
   const fetchIncident = async (id: string) => {
     try {
@@ -314,6 +317,7 @@ export default function IncidentDetailPage() {
     router.push("/auth/signin")
     return null
   }
+  const isAdmin = session.user.role === "ADMIN"
 
   if (loading) {
     return (
@@ -395,6 +399,15 @@ export default function IncidentDetailPage() {
               <Edit className="h-4 w-4 mr-2" />
               Update Status
             </Button>
+            {isAdmin && (
+              <Button 
+                onClick={() => setShowResourceModal(true)}
+                size="sm"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Allocate Resource
+              </Button>
+            )}
             
             {incident?.status === "RESOLVED" && (
               <Button 
@@ -472,6 +485,16 @@ export default function IncidentDetailPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Resource Allocation Modal */}
+        {incident && (
+          <ResourceAllocationModal
+            isOpen={showResourceModal}
+            incident={incident}
+            onClose={() => setShowResourceModal(false)}
+            onSuccess={() => fetchIncident(params.id as string)}
+          />
         )}
 
         {/* Feedback Modal */}

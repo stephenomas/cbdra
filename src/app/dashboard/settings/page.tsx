@@ -23,6 +23,11 @@ interface ProfileData {
   availableResources?: string
   image?: string
   role?: UserRole
+  emergencyContactName?: string
+  emergencyContactPhone?: string
+  emergencyContactAddress?: string
+  emergencyContactRelationship?: string
+  distanceWillingToTravel?: number | null
 }
 
 export default function SettingsPage() {
@@ -245,6 +250,66 @@ export default function SettingsPage() {
                       />
                     </div>
                   )}
+                </div>
+
+                {/* Distance willing to travel */}
+                <div>
+                  <Label htmlFor="distanceWillingToTravel">Distance Willing to Travel (miles)</Label>
+                  <Input
+                    id="distanceWillingToTravel"
+                    type="number"
+                    min={0}
+                    value={profile.distanceWillingToTravel ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      const num = val === "" ? null : Number(val)
+                      setProfile(p => p ? ({ ...p, distanceWillingToTravel: Number.isNaN(num) ? null : num }) : p)
+                    }}
+                    placeholder="Enter distance in kilometers"
+                  />
+                </div>
+
+                {/* Emergency Contact */}
+                <div>
+                  <Label className="mb-2 block">Emergency Contact</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="emergencyContactName">Contact Name</Label>
+                      <Input
+                        id="emergencyContactName"
+                        value={profile.emergencyContactName || ""}
+                        onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactName: e.target.value }) : p)}
+                        placeholder="Full name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
+                      <Input
+                        id="emergencyContactPhone"
+                        value={profile.emergencyContactPhone || ""}
+                        onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactPhone: e.target.value }) : p)}
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emergencyContactAddress">Contact Address</Label>
+                      <Input
+                        id="emergencyContactAddress"
+                        value={profile.emergencyContactAddress || ""}
+                        onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactAddress: e.target.value }) : p)}
+                        placeholder="Address"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emergencyContactRelationship">Relationship</Label>
+                      <Input
+                        id="emergencyContactRelationship"
+                        value={profile.emergencyContactRelationship || ""}
+                        onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactRelationship: e.target.value }) : p)}
+                        placeholder="e.g., Parent, Sibling, Friend"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {success && (

@@ -22,6 +22,11 @@ export default function SignUp() {
     state: '',
     country: '',
     availableResources: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    emergencyContactAddress: '',
+    emergencyContactRelationship: '',
+    distanceWillingToTravel: '',
     password: '',
     confirmPassword: ''
   })
@@ -72,6 +77,11 @@ export default function SignUp() {
           state: formData.state,
           country: formData.country,
           availableResources: formData.availableResources,
+          emergencyContactName: formData.emergencyContactName,
+          emergencyContactPhone: formData.emergencyContactPhone,
+          emergencyContactAddress: formData.emergencyContactAddress,
+          emergencyContactRelationship: formData.emergencyContactRelationship,
+          distanceWillingToTravel: formData.distanceWillingToTravel ? Number(formData.distanceWillingToTravel) : null,
           password: formData.password,
         }),
       })
@@ -124,7 +134,7 @@ export default function SignUp() {
       {/* Left side - Illustration */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10"></div>
-        <div className="relative z-10 flex flex-col justify-center items-center p-12 text-white">
+        <div className="relative z-10 flex flex-col justify-start items-center p-12 pt-16 text-white">
           <div className="mb-8">
             <AuthIllustration />
           </div>
@@ -145,9 +155,9 @@ export default function SignUp() {
       </div>
 
       {/* Right side - Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24">
-        <div className="mx-auto w-full max-w-sm lg:max-w-md">
-          <div className="text-center lg:text-left mb-8">
+      <div className="w-full lg:w-3/5 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-16 xl:px-20">
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="text-center lg:text-left mb-8 lg:pl-6">
             <div className="lg:hidden mb-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Community Disaster Response Alliance
@@ -161,7 +171,7 @@ export default function SignUp() {
             </p>
           </div>
 
-          <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <Card className="p-8 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <form className="space-y-6" onSubmit={handleSubmit}>
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
@@ -169,79 +179,79 @@ export default function SignUp() {
                 </div>
               )}
 
-              <div>
-                <Label htmlFor="name" className="text-gray-700 font-medium">
-                  Full Name
-                </Label>
-                <div className="mt-2">
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    autoComplete="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter your full name"
-                  />
+              {/* Basic Info - two columns on desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name" className="text-gray-700 font-medium">
+                    Full Name
+                  </Label>
+                  <div className="mt-2">
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      autoComplete="name"
+                      required
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <Label htmlFor="email" className="text-gray-700 font-medium">
-                  Email address
-                </Label>
-                <div className="mt-2">
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter your email"
-                  />
+                <div>
+                  <Label htmlFor="email" className="text-gray-700 font-medium">
+                    Email address
+                  </Label>
+                  <div className="mt-2">
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Enter your email"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <Label htmlFor="phone" className="text-gray-700 font-medium">
-                  Phone Number
-                </Label>
-                <div className="mt-2">
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    required
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter your phone number"
-                  />
+                <div>
+                  <Label htmlFor="phone" className="text-gray-700 font-medium">
+                    Phone Number
+                  </Label>
+                  <div className="mt-2">
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      required
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <Label htmlFor="address" className="text-gray-700 font-medium">
-                  Address
-                </Label>
-                <div className="mt-2">
-                  <Input
-                    id="address"
-                    name="address"
-                    type="text"
-                    autoComplete="street-address"
-                    required
-                    value={formData.address}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter your address"
-                  />
+                <div>
+                  <Label htmlFor="address" className="text-gray-700 font-medium">
+                    Address
+                  </Label>
+                  <div className="mt-2">
+                    <Input
+                      id="address"
+                      name="address"
+                      type="text"
+                      autoComplete="street-address"
+                      required
+                      value={formData.address}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Enter your address"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -277,6 +287,27 @@ export default function SignUp() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       placeholder="Enter your country"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Distance willing to travel - part of user info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Label htmlFor="distanceWillingToTravel" className="text-gray-700 font-medium">
+                    Distance Willing to Travel (miles)
+                  </Label>
+                  <div className="mt-2">
+                    <Input
+                      id="distanceWillingToTravel"
+                      name="distanceWillingToTravel"
+                      type="number"
+                      min="0"
+                      value={formData.distanceWillingToTravel}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Enter distance in kilometers"
                     />
                   </div>
                 </div>
@@ -320,6 +351,78 @@ export default function SignUp() {
                   </div>
                 </div>
               )}
+
+              {/* Emergency Contact - two columns */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Emergency Contact</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="emergencyContactName" className="text-gray-700 font-medium">
+                      Contact Name
+                    </Label>
+                    <div className="mt-2">
+                      <Input
+                        id="emergencyContactName"
+                        name="emergencyContactName"
+                        type="text"
+                        value={formData.emergencyContactName}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="Enter contact full name"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="emergencyContactPhone" className="text-gray-700 font-medium">
+                      Contact Phone Number
+                    </Label>
+                    <div className="mt-2">
+                      <Input
+                        id="emergencyContactPhone"
+                        name="emergencyContactPhone"
+                        type="tel"
+                        value={formData.emergencyContactPhone}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="Enter contact phone number"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="emergencyContactAddress" className="text-gray-700 font-medium">
+                      Contact Address
+                    </Label>
+                    <div className="mt-2">
+                      <Input
+                        id="emergencyContactAddress"
+                        name="emergencyContactAddress"
+                        type="text"
+                        value={formData.emergencyContactAddress}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="Enter contact address"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="emergencyContactRelationship" className="text-gray-700 font-medium">
+                      Relationship to You
+                    </Label>
+                    <div className="mt-2">
+                      <Input
+                        id="emergencyContactRelationship"
+                        name="emergencyContactRelationship"
+                        type="text"
+                        value={formData.emergencyContactRelationship}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="e.g., Parent, Sibling, Friend"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
 
               <div>
                 <Label htmlFor="password" className="text-gray-700 font-medium">

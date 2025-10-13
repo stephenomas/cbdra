@@ -24,6 +24,12 @@ export async function GET(_request: NextRequest) {
         availableResources: true,
         image: true,
         role: true,
+        verified: true,
+        emergencyContactName: true,
+        emergencyContactPhone: true,
+        emergencyContactAddress: true,
+        emergencyContactRelationship: true,
+        distanceWillingToTravel: true,
       }
     })
 
@@ -58,6 +64,11 @@ export async function PUT(request: NextRequest) {
       organization,
       availableResources,
       image,
+      emergencyContactName,
+      emergencyContactPhone,
+      emergencyContactAddress,
+      emergencyContactRelationship,
+      distanceWillingToTravel,
     } = body
 
     const updated = await prisma.user.update({
@@ -71,6 +82,11 @@ export async function PUT(request: NextRequest) {
         organization,
         availableResources,
         image,
+        emergencyContactName: emergencyContactName ?? null,
+        emergencyContactPhone: emergencyContactPhone ?? null,
+        emergencyContactAddress: emergencyContactAddress ?? null,
+        emergencyContactRelationship: emergencyContactRelationship ?? null,
+        distanceWillingToTravel: typeof distanceWillingToTravel === 'number' ? distanceWillingToTravel : (distanceWillingToTravel ? Number(distanceWillingToTravel) : null),
       },
       select: {
         id: true,
@@ -84,6 +100,12 @@ export async function PUT(request: NextRequest) {
         availableResources: true,
         image: true,
         role: true,
+        verified: true,
+        emergencyContactName: true,
+        emergencyContactPhone: true,
+        emergencyContactAddress: true,
+        emergencyContactRelationship: true,
+        distanceWillingToTravel: true,
       }
     })
 

@@ -13,6 +13,9 @@ export async function POST(request: NextRequest) {
       state,
       country,
       organization,
+      governmentId,
+      ngoName,
+      ngoFounder,
       availableResources,
       emergencyContactName,
       emergencyContactPhone,
@@ -63,6 +66,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Role-specific validations
+    if (role === "GOVERNMENT_AGENCY" && !governmentId) {
+      return NextResponse.json(
+        { error: "Government ID is required for Government Agency" },
+        { status: 400 }
+      )
+    }
+
+    if (role === "NGO" && (!ngoName || !ngoFounder)) {
+      return NextResponse.json(
+        { error: "NGO Name and NGO Founder are required for NGO" },
+        { status: 400 }
+      )
+    }
+
+    if (role !== "COMMUNITY_USER" && !availableResources) {
+      return NextResponse.json(
+        { error: "Available Resources is required for non-community roles" },
+        { status: 400 }
+      )
+    }
+
     // Forward to send-otp API
     const otpResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/send-otp`, {
       method: 'POST',
@@ -79,6 +104,9 @@ export async function POST(request: NextRequest) {
         state,
         country,
         organization,
+        governmentId,
+        ngoName,
+        ngoFounder,
         availableResources,
         emergencyContactName,
         emergencyContactPhone,

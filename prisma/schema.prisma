@@ -77,6 +77,9 @@ model User {
   state              String?
   country            String?
   organization       String? // For NGOs and Government Agencies
+  governmentId       String? // For Government Agencies
+  ngoName            String? // For NGOs
+  ngoFounder         String? // For NGOs
   availableResources String?   @db.Text // Resources user can provide (non-community roles)
   emergencyContactName         String?
   emergencyContactPhone        String?

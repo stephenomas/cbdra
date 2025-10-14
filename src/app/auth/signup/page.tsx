@@ -21,6 +21,9 @@ export default function SignUp() {
     address: '',
     state: '',
     country: '',
+    governmentId: '',
+    ngoName: '',
+    ngoFounder: '',
     availableResources: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
@@ -62,6 +65,32 @@ export default function SignUp() {
       return
     }
 
+    // Role selection required
+    if (!formData.role) {
+      setError('Please select a role')
+      setLoading(false)
+      return
+    }
+
+    // Role-specific required fields
+    if (formData.role !== 'COMMUNITY_USER' && !formData.availableResources) {
+      setError('Available Resources is required for non-community roles')
+      setLoading(false)
+      return
+    }
+
+    if (formData.role === 'GOVERNMENT_AGENCY' && !formData.governmentId) {
+      setError('Government ID is required for Government Agency')
+      setLoading(false)
+      return
+    }
+
+    if (formData.role === 'NGO' && (!formData.ngoName || !formData.ngoFounder)) {
+      setError('NGO Name and NGO Founder are required for NGO')
+      setLoading(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -76,6 +105,9 @@ export default function SignUp() {
           address: formData.address,
           state: formData.state,
           country: formData.country,
+          governmentId: formData.governmentId || undefined,
+          ngoName: formData.ngoName || undefined,
+          ngoFounder: formData.ngoFounder || undefined,
           availableResources: formData.availableResources,
           emergencyContactName: formData.emergencyContactName,
           emergencyContactPhone: formData.emergencyContactPhone,
@@ -183,7 +215,7 @@ export default function SignUp() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name" className="text-gray-700 font-medium">
-                    Full Name
+                    Full Name <span className="text-red-500">*</span>
                   </Label>
                   <div className="mt-2">
                     <Input
@@ -201,7 +233,7 @@ export default function SignUp() {
                 </div>
                 <div>
                   <Label htmlFor="email" className="text-gray-700 font-medium">
-                    Email address
+                    Email address <span className="text-red-500">*</span>
                   </Label>
                   <div className="mt-2">
                     <Input
@@ -219,7 +251,7 @@ export default function SignUp() {
                 </div>
                 <div>
                   <Label htmlFor="phone" className="text-gray-700 font-medium">
-                    Phone Number
+                    Phone Number <span className="text-red-500">*</span>
                   </Label>
                   <div className="mt-2">
                     <Input
@@ -237,7 +269,7 @@ export default function SignUp() {
                 </div>
                 <div>
                   <Label htmlFor="address" className="text-gray-700 font-medium">
-                    Address
+                    Address <span className="text-red-500">*</span>
                   </Label>
                   <div className="mt-2">
                     <Input
@@ -258,7 +290,7 @@ export default function SignUp() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="state" className="text-gray-700 font-medium">
-                    State/Province
+                    State/Province <span className="text-red-500">*</span>
                   </Label>
                   <div className="mt-2">
                     <Input
@@ -275,7 +307,7 @@ export default function SignUp() {
                 </div>
                 <div>
                   <Label htmlFor="country" className="text-gray-700 font-medium">
-                    Country
+                    Country <span className="text-red-500">*</span>
                   </Label>
                   <div className="mt-2">
                     <Input
@@ -293,29 +325,31 @@ export default function SignUp() {
               </div>
 
               {/* Distance willing to travel - part of user info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="distanceWillingToTravel" className="text-gray-700 font-medium">
-                    Distance Willing to Travel (miles)
-                  </Label>
-                  <div className="mt-2">
-                    <Input
-                      id="distanceWillingToTravel"
-                      name="distanceWillingToTravel"
-                      type="number"
-                      min="0"
-                      value={formData.distanceWillingToTravel}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      placeholder="Enter distance in kilometers"
-                    />
+              {(!formData.role || formData.role !== 'COMMUNITY_USER') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="distanceWillingToTravel" className="text-gray-700 font-medium">
+                      Distance Willing to Travel (miles)
+                    </Label>
+                    <div className="mt-2">
+                      <Input
+                        id="distanceWillingToTravel"
+                        name="distanceWillingToTravel"
+                        type="number"
+                        min="0"
+                        value={formData.distanceWillingToTravel}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="Enter distance in kilometers"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <Label htmlFor="role" className="text-gray-700 font-medium">
-                  Role
+                  Role <span className="text-red-500">*</span>
                 </Label>
                 <div className="mt-2">
                   <Select value={formData.role} onValueChange={(value) => handleSelectChange('role', value)}>
@@ -332,10 +366,71 @@ export default function SignUp() {
                 </div>
               </div>
 
+              {/* Government Agency: Government ID */}
+              {formData.role === 'GOVERNMENT_AGENCY' && (
+                <div>
+                  <Label htmlFor="governmentId" className="text-gray-700 font-medium">
+                    Government ID <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="mt-2">
+                    <Input
+                      id="governmentId"
+                      name="governmentId"
+                      type="text"
+                      required
+                      value={formData.governmentId}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Enter your government ID"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* NGO: NGO Name and Founder */}
+              {formData.role === 'NGO' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="ngoName" className="text-gray-700 font-medium">
+                      NGO Name <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="mt-2">
+                      <Input
+                        id="ngoName"
+                        name="ngoName"
+                        type="text"
+                        required
+                        value={formData.ngoName}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="Enter NGO name"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="ngoFounder" className="text-gray-700 font-medium">
+                      NGO Founder <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="mt-2">
+                      <Input
+                        id="ngoFounder"
+                        name="ngoFounder"
+                        type="text"
+                        required
+                        value={formData.ngoFounder}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="Enter NGO founder's name"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {formData.role && formData.role !== 'COMMUNITY_USER' && (
                 <div>
                   <Label htmlFor="availableResources" className="text-gray-700 font-medium">
-                    Available Resources
+                    Available Resources <span className="text-red-500">*</span>
                   </Label>
                   <div className="mt-2">
                     <Textarea
@@ -353,6 +448,7 @@ export default function SignUp() {
               )}
 
               {/* Emergency Contact - two columns */}
+              {formData.role !== 'GOVERNMENT_AGENCY' && formData.role !== 'NGO' && (
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Emergency Contact</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -422,11 +518,12 @@ export default function SignUp() {
                   </div>
                 </div>
               </div>
+              )}
 
 
               <div>
                 <Label htmlFor="password" className="text-gray-700 font-medium">
-                  Password
+                  Password <span className="text-red-500">*</span>
                 </Label>
                 <div className="mt-2 relative">
                   <Input
@@ -471,7 +568,7 @@ export default function SignUp() {
 
               <div>
                 <Label htmlFor="confirmPassword" className="text-gray-700 font-medium">
-                  Confirm Password
+                  Confirm Password <span className="text-red-500">*</span>
                 </Label>
                 <div className="mt-2 relative">
                   <Input

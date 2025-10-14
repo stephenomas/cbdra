@@ -488,12 +488,10 @@ export default function IncidentDetailPage() {
         )}
 
         {/* Resource Allocation Modal */}
-        {incident && (
+        {showResourceModal && incident && (
           <ResourceAllocationModal
-            isOpen={showResourceModal}
-            incident={incident}
+            incident={incident} 
             onClose={() => setShowResourceModal(false)}
-            onSuccess={() => fetchIncident(params.id as string)}
           />
         )}
 

@@ -15,7 +15,6 @@ interface User {
   name: string
   email: string
   role: string
-  verified: boolean
   availableResources?: string | null
 }
 
@@ -77,9 +76,7 @@ export function ResourceAllocationModal({
         const eligibleUsers = data.filter((user: User) => 
           user.role !== "COMMUNITY_USER" && user.role !== "ADMIN"
         )
-        // Only include users that have been verified
-        const verifiedEligibleUsers = eligibleUsers.filter((user: User) => user.verified === true)
-        setUsers(verifiedEligibleUsers)
+        setUsers(eligibleUsers)
       } else {
         setError("Failed to fetch users")
       }

@@ -1,18 +1,22 @@
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
 export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  { params }: RouteParams
 ) {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { id } = params
+  const { id } = await params
   if (!id) {
     return NextResponse.json({ error: "User ID required" }, { status: 400 })
   }

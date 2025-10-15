@@ -23,7 +23,12 @@ export async function POST(request: NextRequest) {
       emergencyContactPhone,
       emergencyContactAddress,
       emergencyContactRelationship,
-      distanceWillingToTravel
+      distanceWillingToTravel,
+      // Medical ID fields
+      medications,
+      allergies,
+      conditions,
+      medicalAdditionalInfo
     } = await request.json()
 
     // Validate required fields
@@ -75,6 +80,10 @@ export async function POST(request: NextRequest) {
       distanceWillingToTravel: typeof distanceWillingToTravel === 'number' 
         ? distanceWillingToTravel 
         : (distanceWillingToTravel ? Number(distanceWillingToTravel) : null),
+      medications,
+      allergies: allergies || "",
+      conditions,
+      medicalAdditionalInfo,
       otp,
       otpExpiry,
       emailVerified: null, // Not verified yet

@@ -85,6 +85,11 @@ model User {
   emergencyContactPhone        String?
   emergencyContactAddress      String?
   emergencyContactRelationship String?
+  // Medical ID (primarily for Community Users)
+  medications           String?   @db.Text
+  allergies             String     @default("") @db.Text
+  conditions            String?   @db.Text
+  medicalAdditionalInfo String?   @db.Text
   distanceWillingToTravel      Int?
   verified           Boolean   @default(false)
   otp                String? // OTP for email verification

@@ -21,7 +21,12 @@ export async function POST(request: NextRequest) {
       emergencyContactPhone,
       emergencyContactAddress,
       emergencyContactRelationship,
-      distanceWillingToTravel
+      distanceWillingToTravel,
+      // Medical ID fields
+      medications,
+      allergies,
+      conditions,
+      medicalAdditionalInfo
     } = await request.json()
 
     // Validate input
@@ -88,6 +93,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Community user medical validations
+    if (role === "COMMUNITY_USER" && !allergies) {
+      return NextResponse.json(
+        { error: "Allergies is required for Community Users" },
+        { status: 400 }
+      )
+    }
+
     // Forward to send-otp API
     const otpResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/send-otp`, {
       method: 'POST',
@@ -112,7 +125,11 @@ export async function POST(request: NextRequest) {
         emergencyContactPhone,
         emergencyContactAddress,
         emergencyContactRelationship,
-        distanceWillingToTravel
+        distanceWillingToTravel,
+        medications,
+        allergies,
+        conditions,
+        medicalAdditionalInfo
       })
     })
 

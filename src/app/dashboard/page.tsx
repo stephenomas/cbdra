@@ -38,7 +38,8 @@ export default function DashboardPage() {
             const res = await fetch(`/api/user/profile`);
             if (res.ok) {
               const data = await res.json();
-              setUserVerified(Boolean(data.user?.verified));
+              // Profile API returns the user object directly
+              setUserVerified(Boolean(data.verified));
             }
           } catch (error) {
             console.error("Error fetching profile:", error);

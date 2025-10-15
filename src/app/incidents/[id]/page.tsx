@@ -582,6 +582,9 @@ export default function IncidentDetailPage() {
                         {incidentTypeLabels[incident.type]}
                       </span>
                     </div>
+                    <div className="mt-2 text-xs text-gray-600 font-mono">
+                      Incident ID: <span title={incident.id}>{incident.id}</span>
+                    </div>
                   </div>
                 </div>
               </CardHeader>

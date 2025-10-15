@@ -30,6 +30,10 @@ export default function SignUp() {
     emergencyContactAddress: '',
     emergencyContactRelationship: '',
     distanceWillingToTravel: '',
+    medications: '',
+    allergies: '',
+    conditions: '',
+    medicalAdditionalInfo: '',
     password: '',
     confirmPassword: ''
   })
@@ -91,6 +95,12 @@ export default function SignUp() {
       return
     }
 
+    if (formData.role === 'COMMUNITY_USER' && !formData.allergies) {
+      setError('Allergies is required for Community Users')
+      setLoading(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -114,6 +124,10 @@ export default function SignUp() {
           emergencyContactAddress: formData.emergencyContactAddress,
           emergencyContactRelationship: formData.emergencyContactRelationship,
           distanceWillingToTravel: formData.distanceWillingToTravel ? Number(formData.distanceWillingToTravel) : null,
+          medications: formData.medications || undefined,
+          allergies: formData.allergies || undefined,
+          conditions: formData.conditions || undefined,
+          medicalAdditionalInfo: formData.medicalAdditionalInfo || undefined,
           password: formData.password,
         }),
       })
@@ -443,6 +457,84 @@ export default function SignUp() {
                       placeholder="List resources you can provide (e.g., shelter, food, medical aid)"
                       rows={4}
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Community User: Medical ID Section */}
+              {formData.role === 'COMMUNITY_USER' && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Medical ID</h3>
+                  <p className="text-gray-600 mb-4 text-sm">Provide medical details to assist responders. Only allergies is required.</p>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="allergies" className="text-gray-700 font-medium">
+                        Allergies <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="mt-2">
+                        <Textarea
+                          id="allergies"
+                          name="allergies"
+                          required
+                          value={formData.allergies}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          placeholder="List allergies (e.g., penicillin, peanuts)"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="medications" className="text-gray-700 font-medium">
+                        Medications
+                      </Label>
+                      <div className="mt-2">
+                        <Textarea
+                          id="medications"
+                          name="medications"
+                          value={formData.medications}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          placeholder="List current medications"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="conditions" className="text-gray-700 font-medium">
+                        Conditions
+                      </Label>
+                      <div className="mt-2">
+                        <Textarea
+                          id="conditions"
+                          name="conditions"
+                          value={formData.conditions}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          placeholder="List medical conditions"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="medicalAdditionalInfo" className="text-gray-700 font-medium">
+                        Additional Information
+                      </Label>
+                      <div className="mt-2">
+                        <Textarea
+                          id="medicalAdditionalInfo"
+                          name="medicalAdditionalInfo"
+                          value={formData.medicalAdditionalInfo}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          placeholder="Any other relevant medical information"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

@@ -20,6 +20,9 @@ interface ProfileData {
   state?: string
   country?: string
   organization?: string
+  governmentId?: string
+  ngoName?: string
+  ngoFounder?: string
   availableResources?: string
   image?: string
   role?: UserRole
@@ -28,6 +31,11 @@ interface ProfileData {
   emergencyContactAddress?: string
   emergencyContactRelationship?: string
   distanceWillingToTravel?: number | null
+  // Medical ID fields
+  medications?: string
+  allergies?: string
+  conditions?: string
+  medicalAdditionalInfo?: string
 }
 
 export default function SettingsPage() {
@@ -95,6 +103,14 @@ export default function SettingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!profile) return
+    // Client-side validation: allergies required for community users
+    if (profile.role === "COMMUNITY_USER") {
+      const allergiesVal = (profile.allergies || "").trim()
+      if (!allergiesVal) {
+        setError("Allergies is required for community users")
+        return
+      }
+    }
     setSaving(true)
     setError("")
     setSuccess("")
@@ -252,6 +268,93 @@ export default function SettingsPage() {
                   )}
                 </div>
 
+                {/* Government Agency: Government ID (read-only) */}
+                {profile.role === "GOVERNMENT_AGENCY" && (
+                  <div>
+                    <Label htmlFor="governmentId">Government ID</Label>
+                    <Input
+                      id="governmentId"
+                      value={profile.governmentId || ""}
+                      readOnly
+                      disabled
+                      placeholder="Government ID (contact admin to update)"
+                    />
+                  </div>
+                )}
+
+                {/* NGO: NGO Name & Founder */}
+                {profile.role === "NGO" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="ngoName">NGO Name</Label>
+                      <Input
+                        id="ngoName"
+                        value={profile.ngoName || ""}
+                        onChange={(e) => setProfile(p => p ? ({ ...p, ngoName: e.target.value }) : p)}
+                        placeholder="Enter NGO name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="ngoFounder">NGO Founder</Label>
+                      <Input
+                        id="ngoFounder"
+                        value={profile.ngoFounder || ""}
+                        onChange={(e) => setProfile(p => p ? ({ ...p, ngoFounder: e.target.value }) : p)}
+                        placeholder="Enter NGO founder's name"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Community User: Medical ID */}
+                {profile.role === "COMMUNITY_USER" && (
+                  <div>
+                    <Label className="mb-2 block">Medical ID</Label>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="allergies">Allergies</Label>
+                        <Textarea
+                          id="allergies"
+                          value={profile.allergies || ""}
+                          onChange={(e) => setProfile(p => p ? ({ ...p, allergies: e.target.value }) : p)}
+                          placeholder="List allergies (required)"
+                          className="min-h-[80px]"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="medications">Medications</Label>
+                        <Textarea
+                          id="medications"
+                          value={profile.medications || ""}
+                          onChange={(e) => setProfile(p => p ? ({ ...p, medications: e.target.value }) : p)}
+                          placeholder="Current medications"
+                          className="min-h-[80px]"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="conditions">Conditions</Label>
+                        <Textarea
+                          id="conditions"
+                          value={profile.conditions || ""}
+                          onChange={(e) => setProfile(p => p ? ({ ...p, conditions: e.target.value }) : p)}
+                          placeholder="Existing medical conditions"
+                          className="min-h-[80px]"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="medicalAdditionalInfo">Additional Info</Label>
+                        <Textarea
+                          id="medicalAdditionalInfo"
+                          value={profile.medicalAdditionalInfo || ""}
+                          onChange={(e) => setProfile(p => p ? ({ ...p, medicalAdditionalInfo: e.target.value }) : p)}
+                          placeholder="Any other relevant medical information"
+                          className="min-h-[80px]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Distance willing to travel */}
                 <div>
                   <Label htmlFor="distanceWillingToTravel">Distance Willing to Travel (miles)</Label>
@@ -269,48 +372,50 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                {/* Emergency Contact */}
-                <div>
-                  <Label className="mb-2 block">Emergency Contact</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="emergencyContactName">Contact Name</Label>
-                      <Input
-                        id="emergencyContactName"
-                        value={profile.emergencyContactName || ""}
-                        onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactName: e.target.value }) : p)}
-                        placeholder="Full name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
-                      <Input
-                        id="emergencyContactPhone"
-                        value={profile.emergencyContactPhone || ""}
-                        onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactPhone: e.target.value }) : p)}
-                        placeholder="Phone number"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emergencyContactAddress">Contact Address</Label>
-                      <Input
-                        id="emergencyContactAddress"
-                        value={profile.emergencyContactAddress || ""}
-                        onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactAddress: e.target.value }) : p)}
-                        placeholder="Address"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emergencyContactRelationship">Relationship</Label>
-                      <Input
-                        id="emergencyContactRelationship"
-                        value={profile.emergencyContactRelationship || ""}
-                        onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactRelationship: e.target.value }) : p)}
-                        placeholder="e.g., Parent, Sibling, Friend"
-                      />
+                {/* Emergency Contact (not for NGO or Government Agency) */}
+                {profile.role !== "GOVERNMENT_AGENCY" && profile.role !== "NGO" && (
+                  <div>
+                    <Label className="mb-2 block">Emergency Contact</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="emergencyContactName">Contact Name</Label>
+                        <Input
+                          id="emergencyContactName"
+                          value={profile.emergencyContactName || ""}
+                          onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactName: e.target.value }) : p)}
+                          placeholder="Full name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
+                        <Input
+                          id="emergencyContactPhone"
+                          value={profile.emergencyContactPhone || ""}
+                          onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactPhone: e.target.value }) : p)}
+                          placeholder="Phone number"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="emergencyContactAddress">Contact Address</Label>
+                        <Input
+                          id="emergencyContactAddress"
+                          value={profile.emergencyContactAddress || ""}
+                          onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactAddress: e.target.value }) : p)}
+                          placeholder="Address"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="emergencyContactRelationship">Relationship</Label>
+                        <Input
+                          id="emergencyContactRelationship"
+                          value={profile.emergencyContactRelationship || ""}
+                          onChange={(e) => setProfile(p => p ? ({ ...p, emergencyContactRelationship: e.target.value }) : p)}
+                          placeholder="e.g., Parent, Sibling, Friend"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {success && (
                   <p className="text-sm text-green-600">{success}</p>

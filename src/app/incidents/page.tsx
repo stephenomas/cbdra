@@ -349,6 +349,7 @@ export default function IncidentsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>ID</TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Status</TableHead>
@@ -362,6 +363,11 @@ export default function IncidentsPage() {
                   <TableBody>
                     {paginatedIncidents.map((incident) => (
                       <TableRow key={incident.id}>
+                        <TableCell>
+                          <span className="text-xs font-mono text-gray-600 truncate max-w-[160px]" title={incident.id}>
+                            {incident.id}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium">{incident.title}</div>

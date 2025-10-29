@@ -425,7 +425,6 @@ export default function AdminDashboardPage() {
                             <SelectItem value="REPORTED">Reported</SelectItem>
                             <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                             <SelectItem value="RESOLVED">Resolved</SelectItem>
-                            <SelectItem value="CLOSED">Closed</SelectItem>
                           </SelectContent>
                         </Select>
                         

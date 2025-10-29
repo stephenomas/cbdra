@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { IncidentStatus, ResponseType } from "@prisma/client"
 
 export async function POST(
   request: NextRequest,
@@ -36,6 +37,23 @@ export async function POST(
       )
     }
 
+    // Normalize and validate status against Prisma enum
+    const normalizedStatus = String(status).toUpperCase().replace(/\s+/g, "_") as IncidentStatus
+    const validStatuses: IncidentStatus[] = [
+      "PENDING",
+      "VERIFIED",
+      "IN_PROGRESS",
+      "RESOLVED",
+      "REJECTED",
+    ] as unknown as IncidentStatus[]
+
+    if (!validStatuses.includes(normalizedStatus)) {
+      return NextResponse.json(
+        { error: `Invalid status value '${status}'. Expected one of: ${validStatuses.join(", ")}` },
+        { status: 400 }
+      )
+    }
+
     // Verify incident exists
     const incident = await prisma.incidentReport.findUnique({
       where: { id }
@@ -52,7 +70,7 @@ export async function POST(
     const updatedIncident = await prisma.incidentReport.update({
       where: { id },
       data: {
-        status: status,
+        status: normalizedStatus,
         updatedAt: new Date()
       }
     })
@@ -62,7 +80,8 @@ export async function POST(
       data: {
         incidentReportId: id,
         responderId: session.user.id,
-        message: `Status updated to ${status}: ${message}`,
+        message: `Status updated to ${normalizedStatus}: ${message}`,
+        type: ResponseType.STATUS_UPDATE,
         createdAt: new Date()
       }
     })

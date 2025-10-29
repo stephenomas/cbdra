@@ -55,6 +55,13 @@ interface IncidentReport {
   responses: Array<{
     id: string
     message: string
+    type: string
+    challengesFaced?: string | null
+    successesHad?: string | null
+    recommendations?: string | null
+    images: string[]
+    resourcesOffered?: string | null
+    contactInfo?: string | null
     createdAt: string
     responder: {
       id: string
@@ -99,8 +106,7 @@ const statusLabels: Record<string, string> = {
   PENDING: "Pending Review",
   VERIFIED: "Verified",
   IN_PROGRESS: "In Progress",
-  RESOLVED: "Resolved",
-  CLOSED: "Closed"
+  RESOLVED: "Resolved"
 }
 
 const severityLabels: Record<number, string> = {
@@ -109,6 +115,12 @@ const severityLabels: Record<number, string> = {
   3: "High",
   4: "Critical",
   5: "Emergency"
+}
+
+const responseTypeLabels: Record<string, string> = {
+  STATUS_UPDATE: "Status Update",
+  FEEDBACK: "Feedback",
+  STATUS_REPORT: "Status Report"
 }
 
 const getStatusColor = (status: string) => {
@@ -171,11 +183,23 @@ export default function IncidentDetailPage() {
   })
   const [feedbackData, setFeedbackData] = useState({
     message: "",
-    rating: 5,
+    challengesFaced: "",
+    successesHad: "",
+    recommendations: "",
     images: [] as File[]
   })
+  const [feedbackError, setFeedbackError] = useState("")
   const [uploading, setUploading] = useState(false)
   const [showResourceModal, setShowResourceModal] = useState(false)
+  const [showStatusReport, setShowStatusReport] = useState(false)
+  const [statusReportData, setStatusReportData] = useState({
+    message: "",
+    challengesFaced: "",
+    successesHad: "",
+    recommendations: "",
+    images: [] as File[]
+  })
+  const [statusReportError, setStatusReportError] = useState("")
 
   const fetchIncident = async (id: string) => {
     try {
@@ -248,11 +272,78 @@ export default function IncidentDetailPage() {
     }
   }
 
+  const handleStatusReport = async () => {
+    if (!statusReportData.message) return
+
+    try {
+      setUploading(true)
+      setStatusReportError("")
+      
+      // Upload images if any
+      let imageUrls: string[] = []
+      if (statusReportData.images.length > 0) {
+        const formData = new FormData()
+        statusReportData.images.forEach(file => {
+          formData.append('files', file)
+        })
+
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (uploadResponse.ok) {
+          const uploadResult = await uploadResponse.json()
+          imageUrls = uploadResult.files
+        }
+      }
+
+      // Submit status report
+      const response = await fetch(`/api/incidents/${incident?.id}/status-report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: statusReportData.message,
+          challengesFaced: statusReportData.challengesFaced,
+          successesHad: statusReportData.successesHad,
+          recommendations: statusReportData.recommendations,
+          images: imageUrls
+        })
+      })
+
+      if (!response.ok) {
+        let errMsg = 'Failed to submit status report'
+        try {
+          const data = await response.json()
+          if (data?.error) errMsg = data.error
+        } catch (e) {
+          // ignore
+        }
+        setStatusReportError(errMsg)
+        return
+      }
+
+      if (response.ok) {
+        setShowStatusReport(false)
+        setStatusReportData({ message: "", challengesFaced: "", successesHad: "", recommendations: "", images: [] })
+        fetchIncident(params.id as string) // Refresh incident data
+      }
+    } catch (error) {
+      console.error("Error submitting status report:", error)
+      setStatusReportError("An unexpected error occurred while submitting status report")
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleFeedback = async () => {
     if (!feedbackData.message) return
 
     try {
       setUploading(true)
+      setFeedbackError("")
       
       // Upload images if any
       let imageUrls: string[] = []
@@ -273,7 +364,7 @@ export default function IncidentDetailPage() {
         }
       }
 
-      // Submit feedback
+      // Submit feedback (without rating)
       const response = await fetch(`/api/incidents/${incident?.id}/feedback`, {
         method: 'POST',
         headers: {
@@ -281,18 +372,33 @@ export default function IncidentDetailPage() {
         },
         body: JSON.stringify({
           message: feedbackData.message,
-          rating: feedbackData.rating,
+          challengesFaced: feedbackData.challengesFaced,
+          successesHad: feedbackData.successesHad,
+          recommendations: feedbackData.recommendations,
           images: imageUrls
         })
       })
 
+      if (!response.ok) {
+        let errMsg = 'Failed to submit feedback'
+        try {
+          const data = await response.json()
+          if (data?.error) errMsg = data.error
+        } catch (e) {
+          // ignore
+        }
+        setFeedbackError(errMsg)
+        return
+      }
+
       if (response.ok) {
         setShowFeedback(false)
-        setFeedbackData({ message: "", rating: 5, images: [] })
+        setFeedbackData({ message: "", challengesFaced: "", successesHad: "", recommendations: "", images: [] })
         fetchIncident(params.id as string) // Refresh incident data
       }
     } catch (error) {
       console.error("Error submitting feedback:", error)
+      setFeedbackError("An unexpected error occurred while submitting feedback")
     } finally {
       setUploading(false)
     }
@@ -318,6 +424,8 @@ export default function IncidentDetailPage() {
     return null
   }
   const isAdmin = session.user.role === "ADMIN"
+  const canGiveFeedback = ["COMMUNITY_USER", "NGO", "VOLUNTEER", "GOVERNMENT_AGENCY"].includes(session.user.role)
+  const canGiveStatusReport = ["COMMUNITY_USER", "NGO", "GOVERNMENT_AGENCY"].includes(session.user.role)
 
   if (loading) {
     return (
@@ -391,14 +499,16 @@ export default function IncidentDetailPage() {
           
           {/* Action Buttons */}
           <div className="flex gap-2">
-            <Button 
-              onClick={() => setShowStatusUpdate(true)}
-              variant="outline"
-              size="sm"
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Update Status
-            </Button>
+            {isAdmin && (
+              <Button 
+                onClick={() => setShowStatusUpdate(true)}
+                variant="outline"
+                size="sm"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Update Status
+              </Button>
+            )}
             {isAdmin && (
               <Button 
                 onClick={() => setShowResourceModal(true)}
@@ -408,15 +518,24 @@ export default function IncidentDetailPage() {
                 Allocate Resource
               </Button>
             )}
-            
-            {incident?.status === "RESOLVED" && (
+            {canGiveFeedback && incident.status === "RESOLVED" && (
               <Button 
-                onClick={() => setShowFeedback(true)}
+                onClick={() => { setFeedbackError(""); setShowFeedback(true) }}
                 variant="outline"
                 size="sm"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
-                Provide Feedback
+                Give Feedback
+              </Button>
+            )}
+            {canGiveStatusReport && incident.status === "IN_PROGRESS" && (
+              <Button 
+                onClick={() => { setStatusReportError(""); setShowStatusReport(true) }}
+                variant="outline"
+                size="sm"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Give Status Report
               </Button>
             )}
           </div>
@@ -440,7 +559,6 @@ export default function IncidentDetailPage() {
                     <option value="VERIFIED">Verified</option>
                     <option value="IN_PROGRESS">In Progress</option>
                     <option value="RESOLVED">Resolved</option>
-                    <option value="CLOSED">Closed</option>
                   </select>
                 </div>
                 
@@ -501,33 +619,60 @@ export default function IncidentDetailPage() {
         {showFeedback && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Provide Feedback</h3>
+              <h3 className="text-lg font-semibold mb-4">Give Feedback</h3>
+              {feedbackError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{feedbackError}</AlertDescription>
+                </Alert>
+              )}
               
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Rating</label>
-                  <select 
-                    value={feedbackData.rating}
-                    onChange={(e) => setFeedbackData({...feedbackData, rating: parseInt(e.target.value)})}
-                    className="w-full p-2 border rounded-md"
-                  >
-                    <option value={5}>5 - Excellent</option>
-                    <option value={4}>4 - Good</option>
-                    <option value={3}>3 - Average</option>
-                    <option value={2}>2 - Poor</option>
-                    <option value={1}>1 - Very Poor</option>
-                  </select>
-                </div>
+                {/* Removed rating selector */}
                 
                 <div>
                   <label className="block text-sm font-medium mb-2">Feedback Message</label>
                   <textarea 
                     value={feedbackData.message}
                     onChange={(e) => setFeedbackData({...feedbackData, message: e.target.value})}
-                    className="w-full p-2 border rounded-md h-24"
+                    className="w-full p-2 border rounded-md h-20"
                     placeholder="Share your feedback about the incident resolution..."
                   />
                 </div>
+                
+                {(session?.user.role === "VOLUNTEER" || session?.user.role === "NGO" || session?.user.role === "GOVERNMENT_AGENCY") && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Challenges Faced</label>
+                      <textarea 
+                        value={feedbackData.challengesFaced}
+                        onChange={(e) => setFeedbackData({...feedbackData, challengesFaced: e.target.value})}
+                        className="w-full p-2 border rounded-md h-16"
+                        placeholder="Describe any challenges encountered during the response..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Successes Had</label>
+                      <textarea 
+                        value={feedbackData.successesHad}
+                        onChange={(e) => setFeedbackData({...feedbackData, successesHad: e.target.value})}
+                        className="w-full p-2 border rounded-md h-16"
+                        placeholder="Describe any successes or positive outcomes..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Recommendations</label>
+                      <textarea 
+                        value={feedbackData.recommendations}
+                        onChange={(e) => setFeedbackData({...feedbackData, recommendations: e.target.value})}
+                        className="w-full p-2 border rounded-md h-16"
+                        placeholder="Provide recommendations for improving future responses..."
+                      />
+                    </div>
+                  </>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium mb-2">Attach Images (Optional)</label>
@@ -552,7 +697,97 @@ export default function IncidentDetailPage() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => setShowFeedback(false)}
+                  onClick={() => { setFeedbackError(""); setShowFeedback(false) }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status Report Modal */}
+        {showStatusReport && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Give Status Report</h3>
+              {statusReportError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{statusReportError}</AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Status Update Message</label>
+                  <textarea 
+                    value={statusReportData.message}
+                    onChange={(e) => setStatusReportData({...statusReportData, message: e.target.value})}
+                    className="w-full p-2 border rounded-md h-20"
+                    placeholder="Provide an update on the current situation..."
+                  />
+                </div>
+                
+                {(session?.user.role === "VOLUNTEER" || session?.user.role === "NGO" || session?.user.role === "GOVERNMENT_AGENCY") && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Challenges Faced</label>
+                      <textarea 
+                        value={statusReportData.challengesFaced}
+                        onChange={(e) => setStatusReportData({...statusReportData, challengesFaced: e.target.value})}
+                        className="w-full p-2 border rounded-md h-16"
+                        placeholder="Describe any challenges encountered..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Successes Had</label>
+                      <textarea 
+                        value={statusReportData.successesHad}
+                        onChange={(e) => setStatusReportData({...statusReportData, successesHad: e.target.value})}
+                        className="w-full p-2 border rounded-md h-16"
+                        placeholder="Describe any successes or progress made..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Recommendations</label>
+                      <textarea 
+                        value={statusReportData.recommendations}
+                        onChange={(e) => setStatusReportData({...statusReportData, recommendations: e.target.value})}
+                        className="w-full p-2 border rounded-md h-16"
+                        placeholder="Provide recommendations for improving the process..."
+                      />
+                    </div>
+                  </>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Attach Images (Optional)</label>
+                  <input 
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => setStatusReportData({...statusReportData, images: Array.from(e.target.files || [])})}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2 mt-6">
+                <Button 
+                  onClick={handleStatusReport}
+                  disabled={!statusReportData.message || uploading}
+                  className="flex-1"
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Submit Status Report
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => { setStatusReportError(""); setShowStatusReport(false) }}
                   className="flex-1"
                 >
                   Cancel
@@ -800,24 +1035,125 @@ export default function IncidentDetailPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {incident.responses.map((response) => (
-                      <div key={response.id} className="border-l-4 border-blue-200 pl-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-gray-900">
-                            {getRoleIcon(response.responder.role)} {response.responder.name}
-                          </span>
-                          {response.responder.organization && (
-                            <span className="text-sm text-gray-600">
-                              ({response.responder.organization})
+                      <div key={response.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        {/* Header with responder info and response type */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900">
+                              {getRoleIcon(response.responder.role)} {response.responder.name}
                             </span>
-                          )}
-                          <span className="text-xs text-gray-500">
-                            {new Date(response.createdAt).toLocaleDateString()} at{" "}
-                            {new Date(response.createdAt).toLocaleTimeString()}
-                          </span>
+                            {response.responder.organization && (
+                              <span className="text-sm text-gray-600">
+                                ({response.responder.organization})
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              response.type === 'STATUS_UPDATE' ? 'bg-blue-100 text-blue-800' :
+                              response.type === 'STATUS_REPORT' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {responseTypeLabels[response.type] || response.type}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(response.createdAt).toLocaleDateString()} at{" "}
+                              {new Date(response.createdAt).toLocaleTimeString()}
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-gray-700">{response.message}</p>
+
+                        {/* Main message */}
+                        <div className="mb-4">
+                          <h4 className="font-medium text-gray-900 mb-2">Message</h4>
+                          <p className="text-gray-700 leading-relaxed">{response.message}</p>
+                        </div>
+
+                        {/* Additional details if provided */}
+                        {(response.challengesFaced || response.successesHad || response.recommendations) && (
+                          <div className="space-y-4">
+                            {response.challengesFaced && (
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">Challenges Faced</h4>
+                                <p className="text-gray-700 leading-relaxed">{response.challengesFaced}</p>
+                              </div>
+                            )}
+
+                            {response.successesHad && (
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">Successes Achieved</h4>
+                                <p className="text-gray-700 leading-relaxed">{response.successesHad}</p>
+                              </div>
+                            )}
+
+                            {response.recommendations && (
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">Recommendations</h4>
+                                <p className="text-gray-700 leading-relaxed">{response.recommendations}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Contact info */}
+                        {response.contactInfo && (
+                          <div className="mt-4">
+                            <h4 className="font-medium text-gray-900 mb-2">Contact Information</h4>
+                            <p className="text-gray-700">{response.contactInfo}</p>
+                          </div>
+                        )}
+
+                        {/* Resources offered */}
+                        {response.resourcesOffered && (
+                          <div className="mt-4">
+                            <h4 className="font-medium text-gray-900 mb-2">Resources Offered</h4>
+                            <p className="text-gray-700">{response.resourcesOffered}</p>
+                          </div>
+                        )}
+
+                        {/* Response images */}
+                        {response.images && response.images.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="font-medium text-gray-900 mb-3">Attachments</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              {response.images.map((url, i) => (
+                                <div key={i} className="relative group">
+                                  <Image
+                                    src={url}
+                                    alt={`Response attachment ${i + 1}`}
+                                    width={400}
+                                    height={192}
+                                    className="w-full h-32 object-cover rounded-md border shadow-sm"
+                                    onError={(e) => {
+                                      console.error('Response image failed to load:', url)
+                                      const target = e.currentTarget
+                                      target.style.backgroundColor = '#f3f4f6'
+                                      target.style.display = 'flex'
+                                      target.style.alignItems = 'center'
+                                      target.style.justifyContent = 'center'
+                                      target.innerHTML = '<span style="color: #6b7280; font-size: 12px;">Failed to load</span>'
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-md flex items-center justify-center">
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => window.open(url, '_blank')}
+                                        className="bg-white/90 hover:bg-white text-gray-800"
+                                      >
+                                        <ImageIcon className="h-3 w-3 mr-1" />
+                                        View
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

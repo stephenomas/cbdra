@@ -129,11 +129,22 @@ model IncidentReport {
   resourceAllocations ResourceAllocation[]
 }
 
+enum ResponseType {
+  STATUS_UPDATE
+  FEEDBACK
+  STATUS_REPORT
+}
+
 model Response {
   id               String   @id @default(cuid())
   incidentReportId String
   responderId      String
   message          String   @db.Text
+  type             ResponseType @default(FEEDBACK)
+  challengesFaced  String?  @db.Text
+  successesHad     String?  @db.Text
+  recommendations  String?  @db.Text
+  images           String[]
   resourcesOffered String?  @db.Text
   contactInfo      String?
   createdAt        DateTime @default(now())

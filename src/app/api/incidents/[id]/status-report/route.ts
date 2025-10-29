@@ -18,16 +18,25 @@ export async function POST(
       )
     }
 
-    const { message, images, challengesFaced, successesHad, recommendations } = await request.json()
+    // Check if user has permission to give status reports
+    const allowedRoles = ["COMMUNITY_USER", "NGO", "GOVERNMENT_AGENCY"]
+    if (!allowedRoles.includes(session.user.role)) {
+      return NextResponse.json(
+        { error: "You don't have permission to submit status reports" },
+        { status: 403 }
+      )
+    }
+
+    const { message, challengesFaced, successesHad, recommendations, images } = await request.json()
 
     if (!message) {
       return NextResponse.json(
-        { error: "Feedback message is required" },
+        { error: "Status report message is required" },
         { status: 400 }
       )
     }
 
-    // Verify incident exists and is resolved
+    // Verify incident exists and is in progress
     const incident = await prisma.incidentReport.findUnique({
       where: { id }
     })
@@ -39,20 +48,20 @@ export async function POST(
       )
     }
 
-    if (incident.status !== "RESOLVED") {
+    if (incident.status !== "IN_PROGRESS") {
       return NextResponse.json(
-        { error: "Feedback can only be provided for resolved incidents" },
+        { error: "Status reports can only be provided for incidents in progress" },
         { status: 400 }
       )
     }
 
-    // Create feedback as a response with new schema fields
-    const feedback = await prisma.response.create({
+    // Create status report as a response with new schema fields
+    const statusReport = await prisma.response.create({
       data: {
         incidentReportId: id,
         responderId: session.user.id,
         message: message,
-        type: "FEEDBACK",
+        type: "STATUS_REPORT",
         challengesFaced: challengesFaced || null,
         successesHad: successesHad || null,
         recommendations: recommendations || null,
@@ -63,11 +72,11 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      feedback: feedback
+      statusReport: statusReport
     })
 
   } catch (error) {
-    console.error("Error submitting feedback:", error)
+    console.error("Error submitting status report:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

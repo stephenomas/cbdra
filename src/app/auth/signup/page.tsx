@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AvailableResourcesSelector } from '@/components/ui/available-resources-selector'
 import { AuthIllustration } from '@/components/ui/auth-illustration'
 import OTPVerification from '@/components/auth/OTPVerification'
 
@@ -442,22 +443,14 @@ export default function SignUp() {
               )}
 
               {formData.role && formData.role !== 'COMMUNITY_USER' && (
-                <div>
-                  <Label htmlFor="availableResources" className="text-gray-700 font-medium">
-                    Available Resources <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="mt-2">
-                    <Textarea
-                      id="availableResources"
-                      name="availableResources"
-                      required
-                      value={formData.availableResources}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      placeholder="List resources you can provide (e.g., shelter, food, medical aid)"
-                      rows={4}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <AvailableResourcesSelector
+                    value={formData.availableResources}
+                    onChange={(val) => setFormData({ ...formData, availableResources: val })}
+                    label="Available Resources"
+                    required
+                    helperText="Choose from common options or type your own under Other."
+                  />
                 </div>
               )}
 

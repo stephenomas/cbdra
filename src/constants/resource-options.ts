@@ -1,0 +1,17 @@
+export const AVAILABLE_RESOURCE_OPTIONS: string[] = [
+  "Boat (for flood rescues)",
+  "Truck or SUV (for debris transport or supply delivery)",
+  "Motorcycle or bicycle (for navigating blocked roads)",
+  "First aid kit",
+  "Generator",
+  "Chainsaw or cutting tools",
+  "Flashlights, batteries, or lanterns",
+  "CPR / First Aid Certified",
+  "Search and rescue training",
+  "Medical professional (doctor, nurse, EMT, etc.)",
+  "Construction or repair skills (carpentry, roofing, plumbing, etc.)",
+  "Animal rescue experience",
+  "Food and water donations",
+  "Clothing, blankets, or hygiene items",
+  "Radio or walkie-talkie access",
+]

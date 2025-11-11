@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { AvailableResourcesSelector } from "@/components/ui/available-resources-selector"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { X, Shield, User, AlertTriangle } from "lucide-react"
@@ -216,15 +217,13 @@ export function ResourceAllocationModal({
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="resourceType" className="text-gray-900 font-medium">Resources Needed *</Label>
-              <Textarea
-                id="resourceType"
-                placeholder="Describe resources needed (free text)"
+            <div className="space-y-2">
+              <AvailableResourcesSelector
                 value={formData.resourceType}
-                onChange={(e) => setFormData({ ...formData, resourceType: e.target.value })}
-                rows={3}
-                className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
+                onChange={(val) => setFormData({ ...formData, resourceType: val })}
+                label="Resources Needed"
+                required
+                helperText="Select needed resources and add any custom items under Other."
               />
             </div>
 
@@ -236,11 +235,19 @@ export function ResourceAllocationModal({
                   if (!selected) return (
                     <p className="text-sm text-gray-500">No user selected.</p>
                   )
-                  const resources = selected.availableResources?.trim()
-                  return resources ? (
-                    <p className="text-sm text-gray-700 whitespace-pre-line">{resources}</p>
-                  ) : (
-                    <p className="text-sm text-gray-500">No available resources provided by this user.</p>
+                  const resources = (selected.availableResources || "").trim()
+                  if (!resources) {
+                    return <p className="text-sm text-gray-500">No available resources provided by this user.</p>
+                  }
+                  const items = resources.split(",").map((x) => x.trim()).filter(Boolean)
+                  return (
+                    <div className="flex flex-wrap gap-2">
+                      {items.map((item, idx) => (
+                        <span key={`${item}-${idx}`} className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 border border-blue-200">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
                   )
                 })()}
               </div>

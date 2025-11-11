@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { AvailableResourcesSelector } from "@/components/ui/available-resources-selector"
 import { Button } from "@/components/ui/button"
 import type { UserRole } from "@prisma/client"
 
@@ -255,14 +256,12 @@ export default function SettingsPage() {
                     />
                   </div>
                   {(profile.role === "VOLUNTEER" || profile.role === "NGO" || profile.role === "GOVERNMENT_AGENCY") && (
-                    <div>
-                      <Label htmlFor="resources">Available Resources</Label>
-                      <Textarea
-                        id="resources"
+                    <div className="space-y-2">
+                      <AvailableResourcesSelector
                         value={profile.availableResources || ""}
-                        onChange={(e) => setProfile(p => p ? ({ ...p, availableResources: e.target.value }) : p)}
-                        placeholder="Describe resources you can provide"
-                        className="min-h-[100px]"
+                        onChange={(val) => setProfile(p => p ? ({ ...p, availableResources: val }) : p)}
+                        label="Available Resources"
+                        helperText="Select all that apply, and add any extra under Other."
                       />
                     </div>
                   )}

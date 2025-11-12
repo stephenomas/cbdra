@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { AVAILABLE_RESOURCE_OPTIONS } from "@/constants/resource-options"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -46,13 +46,24 @@ export function AvailableResourcesSelector({
   // Derive selections from incoming value
   const incoming = splitResources(value || "")
   const selected = incoming.filter((x) => options.includes(x))
-  const other = incoming.filter((x) => !options.includes(x)).join(", ")
+  const derivedOther = incoming.filter((x) => !options.includes(x)).join(", ")
+
+  // Local state to allow free typing (spaces/commas) without immediate normalization
+  const [otherInput, setOtherInput] = useState<string>(derivedOther)
+  const [otherFocused, setOtherFocused] = useState<boolean>(false)
+
+  // Keep local input in sync with external value when not editing
+  useEffect(() => {
+    if (!otherFocused) {
+      setOtherInput(derivedOther)
+    }
+  }, [derivedOther, otherFocused])
 
   const toggleOption = (opt: string) => {
     const isSelected = selected.includes(opt)
     const nextSelected = isSelected ? selected.filter((x) => x !== opt) : [...selected, opt]
     const parts = [...nextSelected]
-    const otherTrim = other.trim()
+    const otherTrim = otherInput.trim()
     if (otherTrim.length > 0 && showOther) {
       // Split display "Other" field on comma (user preference)
       const otherTokens = otherTrim.split(",").map((x) => x.trim()).filter(Boolean)
@@ -62,14 +73,18 @@ export function AvailableResourcesSelector({
   }
 
   const handleOtherChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
+    setOtherInput(e.target.value)
+  }
+
+  const handleOtherBlur = () => {
     const parts = [...selected]
-    const otherTrim = val.trim()
+    const otherTrim = otherInput.trim()
     if (otherTrim.length > 0) {
       const otherTokens = otherTrim.split(",").map((x) => x.trim()).filter(Boolean)
       parts.push(...otherTokens)
     }
     onChange(parts.join("|"))
+    setOtherFocused(false)
   }
 
   return (
@@ -100,12 +115,14 @@ export function AvailableResourcesSelector({
           </Label>
           <Input
             id="resources-other"
-            value={other}
+            value={otherInput}
             onChange={handleOtherChange}
+            onFocus={() => setOtherFocused(true)}
+            onBlur={handleOtherBlur}
             placeholder="Type any additional resources not listed"
           />
           <p className="text-xs text-gray-500">
-            Other entries are separated by commas; selections are stored safely.
+            You can type spaces and commas freely; we parse on blur.
           </p>
         </div>
       )}

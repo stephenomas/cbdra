@@ -11,14 +11,26 @@ interface AvailableResourcesSelectorProps {
   label?: string
   required?: boolean
   helperText?: string
+  optionsOverride?: string[]
+  showOther?: boolean
 }
 
-// Utility to split a comma-separated string into trimmed items
-const splitResources = (s: string) =>
-  s
-    .split(",")
-    .map((x) => x.trim())
-    .filter((x) => x.length > 0)
+// Utility to split a delimited string into trimmed items.
+// Prefer pipe '|' delimiter to avoid conflicts with option labels containing commas.
+const splitResources = (s: string) => {
+  const source = (s || "").trim()
+  if (!source) return []
+  // Preferred delimiter
+  if (source.includes("|")) {
+    return source.split("|").map((x) => x.trim()).filter(Boolean)
+  }
+  // If the entire string matches an option, treat as single item
+  if (AVAILABLE_RESOURCE_OPTIONS.includes(source)) {
+    return [source]
+  }
+  // Legacy: comma-delimited values saved earlier
+  return source.split(",").map((x) => x.trim()).filter(Boolean)
+}
 
 export function AvailableResourcesSelector({
   value,
@@ -26,8 +38,10 @@ export function AvailableResourcesSelector({
   label = "Available Resources",
   required,
   helperText,
+  optionsOverride,
+  showOther = true,
 }: AvailableResourcesSelectorProps) {
-  const options = useMemo(() => AVAILABLE_RESOURCE_OPTIONS, [])
+  const options = useMemo(() => optionsOverride ?? AVAILABLE_RESOURCE_OPTIONS, [optionsOverride])
 
   // Derive selections from incoming value
   const incoming = splitResources(value || "")
@@ -39,16 +53,23 @@ export function AvailableResourcesSelector({
     const nextSelected = isSelected ? selected.filter((x) => x !== opt) : [...selected, opt]
     const parts = [...nextSelected]
     const otherTrim = other.trim()
-    if (otherTrim.length > 0) parts.push(otherTrim)
-    onChange(parts.join(", "))
+    if (otherTrim.length > 0 && showOther) {
+      // Split display "Other" field on comma (user preference)
+      const otherTokens = otherTrim.split(",").map((x) => x.trim()).filter(Boolean)
+      parts.push(...otherTokens)
+    }
+    onChange(parts.join("|"))
   }
 
   const handleOtherChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     const parts = [...selected]
     const otherTrim = val.trim()
-    if (otherTrim.length > 0) parts.push(otherTrim)
-    onChange(parts.join(", "))
+    if (otherTrim.length > 0) {
+      const otherTokens = otherTrim.split(",").map((x) => x.trim()).filter(Boolean)
+      parts.push(...otherTokens)
+    }
+    onChange(parts.join("|"))
   }
 
   return (
@@ -72,20 +93,22 @@ export function AvailableResourcesSelector({
           </label>
         ))}
       </div>
-      <div className="space-y-1">
-        <Label htmlFor="resources-other" className="text-gray-700">
-          Other (comma-separated if multiple)
-        </Label>
-        <Input
-          id="resources-other"
-          value={other}
-          onChange={handleOtherChange}
-          placeholder="Type any additional resources not listed"
-        />
-        <p className="text-xs text-gray-500">
-          Selected values are saved as a single comma-separated list.
-        </p>
-      </div>
+      {showOther && (
+        <div className="space-y-1">
+          <Label htmlFor="resources-other" className="text-gray-700">
+            Other (separate with , if multiple)
+          </Label>
+          <Input
+            id="resources-other"
+            value={other}
+            onChange={handleOtherChange}
+            placeholder="Type any additional resources not listed"
+          />
+          <p className="text-xs text-gray-500">
+            Other entries are separated by commas; selections are stored safely.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

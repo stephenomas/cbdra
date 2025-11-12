@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { AvailableResourcesSelector } from "@/components/ui/available-resources-selector"
+import { AVAILABLE_RESOURCE_OPTIONS } from "@/constants/resource-options"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { X, Shield, User, AlertTriangle } from "lucide-react"
@@ -218,13 +219,34 @@ export function ResourceAllocationModal({
             </div>
 
             <div className="space-y-2">
-              <AvailableResourcesSelector
-                value={formData.resourceType}
-                onChange={(val) => setFormData({ ...formData, resourceType: val })}
-                label="Resources Needed"
-                required
-                helperText="Select needed resources and add any custom items under Other."
-              />
+              {(() => {
+                const selectedUser = users.find(u => u.id === formData.allocatedToId)
+                let userOptions: string[] = []
+                if (selectedUser) {
+                  const raw = (selectedUser.availableResources || "").trim()
+                  if (raw.includes("|")) {
+                    userOptions = raw.split("|").map((x) => x.trim()).filter(Boolean)
+                  } else {
+                    // If matches a single known option, treat as one; else comma-split
+                    if (AVAILABLE_RESOURCE_OPTIONS.includes(raw)) {
+                      userOptions = [raw]
+                    } else {
+                      userOptions = raw.split(",").map((x) => x.trim()).filter(Boolean)
+                    }
+                  }
+                }
+                return (
+                  <AvailableResourcesSelector
+                    value={formData.resourceType}
+                    onChange={(val) => setFormData({ ...formData, resourceType: val })}
+                    label="Resources to Allocate"
+                    required
+                    helperText={selectedUser ? "Select only from this user's available resources." : "Select a user to view available resources."}
+                    optionsOverride={userOptions}
+                    showOther={false}
+                  />
+                )
+              })()}
             </div>
 
             {formData.allocatedToId && (
@@ -235,11 +257,18 @@ export function ResourceAllocationModal({
                   if (!selected) return (
                     <p className="text-sm text-gray-500">No user selected.</p>
                   )
-                  const resources = (selected.availableResources || "").trim()
-                  if (!resources) {
+                  const resourcesRaw = (selected.availableResources || "").trim()
+                  if (!resourcesRaw) {
                     return <p className="text-sm text-gray-500">No available resources provided by this user.</p>
                   }
-                  const items = resources.split(",").map((x) => x.trim()).filter(Boolean)
+                  let items: string[] = []
+                  if (resourcesRaw.includes("|")) {
+                    items = resourcesRaw.split("|").map((x) => x.trim()).filter(Boolean)
+                  } else if (AVAILABLE_RESOURCE_OPTIONS.includes(resourcesRaw)) {
+                    items = [resourcesRaw]
+                  } else {
+                    items = resourcesRaw.split(",").map((x) => x.trim()).filter(Boolean)
+                  }
                   return (
                     <div className="flex flex-wrap gap-2">
                       {items.map((item, idx) => (

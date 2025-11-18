@@ -47,6 +47,7 @@ export function ResourceAllocationModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [resourceQuery, setResourceQuery] = useState("")
   
   const [formData, setFormData] = useState({
     allocatedToId: "",
@@ -86,6 +87,27 @@ export function ResourceAllocationModal({
       setError("Error loading users")
     }
   }
+
+  const parseResourceTokens = (raw: string | null | undefined): string[] => {
+    const val = (raw || "").trim()
+    if (!val) return []
+    let tokens: string[] = []
+    if (val.includes("|")) {
+      tokens = val.split("|")
+    } else if (AVAILABLE_RESOURCE_OPTIONS.includes(val)) {
+      tokens = [val]
+    } else {
+      tokens = val.split(",")
+    }
+    return tokens.map((x) => x.trim().toLowerCase()).filter(Boolean)
+  }
+
+  const filteredUsers = users.filter((u) => {
+    const q = resourceQuery.trim().toLowerCase()
+    if (!q) return true
+    const tokens = parseResourceTokens(u.availableResources)
+    return tokens.some((t) => t.includes(q))
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -197,6 +219,16 @@ export function ResourceAllocationModal({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
+              <Label htmlFor="search-resources" className="text-gray-900 font-medium">Search by available resources</Label>
+              <Input
+                id="search-resources"
+                placeholder="e.g., ambulance, food, shelter"
+                value={resourceQuery}
+                onChange={(e) => setResourceQuery(e.target.value)}
+                className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+            <div>
               <Label htmlFor="allocatedToId" className="text-gray-900 font-medium">Assign To *</Label>
               <Select
                 value={formData.allocatedToId}
@@ -206,7 +238,7 @@ export function ResourceAllocationModal({
                   <SelectValue placeholder="Select a user to assign resources" className="text-gray-500" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => (
                     <SelectItem key={user.id} value={user.id} className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">
                       <div className="flex items-center">
                         <User className="h-4 w-4 mr-2 text-gray-600" />

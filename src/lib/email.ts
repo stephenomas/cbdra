@@ -173,3 +173,52 @@ export async function sendAllocationEmail(params: {
     // Don't throw to avoid breaking allocation flow; log for observability
   }
 }
+
+// Send support/help request to a fixed recipient
+export async function sendSupportEmail(params: {
+  fromName?: string
+  fromEmail?: string
+  role?: string
+  userId?: string
+  message: string
+}): Promise<void> {
+  const { fromName, fromEmail, role, userId, message } = params
+
+  const recipient = "Emmanuelolachealii@gmail.com"
+
+  const mailOptions = {
+    from: `"${process.env.MAIL_FROM_NAME || 'CDRA'}" <${process.env.MAIL_FROM_EMAIL || 'no-reply@cdra.local'}>`,
+    to: recipient,
+    subject: `CDRA Support Request${fromName ? ` - ${fromName}` : ''}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Support Request</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #f8f9fa; padding: 24px; border-radius: 10px; border: 1px solid #e9ecef;">
+            <h2 style="color: #495057; margin-top: 0;">New Support Request</h2>
+            <p style="color:#495057"><strong>Name:</strong> ${fromName || 'N/A'}</p>
+            <p style="color:#495057"><strong>Email:</strong> ${fromEmail || 'N/A'}</p>
+            <p style="color:#495057"><strong>Role:</strong> ${role || 'N/A'}</p>
+            <p style="color:#495057"><strong>User ID:</strong> ${userId || 'N/A'}</p>
+            <p style="color:#495057"><strong>Message:</strong></p>
+            <div style="white-space: pre-wrap; color:#333; border:1px solid #e9ecef; background:#fff; border-radius:8px; padding:12px;">${message}</div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `New Support Request\n\nName: ${fromName || 'N/A'}\nEmail: ${fromEmail || 'N/A'}\nRole: ${role || 'N/A'}\nUser ID: ${userId || 'N/A'}\n\nMessage:\n${message}`,
+  }
+
+  try {
+    await transporter.sendMail(mailOptions)
+    console.log(`Support email sent to ${recipient}`)
+  } catch (error) {
+    console.error('Error sending support email:', error)
+    throw new Error('Failed to send support email')
+  }
+}

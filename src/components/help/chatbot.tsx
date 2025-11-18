@@ -228,6 +228,17 @@ export function HelpChatbot() {
                 </button>
               ))}
             </div>
+            <SupportForm onSent={() => {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: crypto.randomUUID(),
+                  author: "bot",
+                  ts: Date.now(),
+                  text: "our agents will get back to you as soon as possible",
+                },
+              ])
+            }} />
           </div>
         </div>
       ) : (
@@ -239,6 +250,109 @@ export function HelpChatbot() {
           <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse" />
           Help
         </button>
+      )}
+    </div>
+  )
+}
+
+function SupportForm({ onSent }: { onSent: () => void }) {
+  const { data: session } = useSession()
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState(session?.user?.name || "")
+  const [email, setEmail] = useState(session?.user?.email || "")
+  const [message, setMessage] = useState("")
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+
+  const validate = () => {
+    if (!message.trim()) return "Please enter your question/message."
+    if (!email.trim()) return "Please enter your email."
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Please enter a valid email."
+    return ""
+  }
+
+  const submit = async () => {
+    const v = validate()
+    if (v) { setError(v); return }
+    setError("")
+    setSending(true)
+    try {
+      const res = await fetch("/api/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to send")
+      setMessage("")
+      setSuccess(true)
+      onSent()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to send support request"
+      setError(msg)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="text-xs text-blue-700 hover:text-blue-800 underline"
+        >
+          Can’t find what you need? Contact support
+        </button>
+      ) : (
+        <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
+          {success && (
+            <div className="mb-2 rounded-md border border-green-200 bg-green-50 text-green-800 text-xs px-3 py-2">
+              our agents will get back to you as soon as possible
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-2 mb-2">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={success}
+            />
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Your email"
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={success}
+            />
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Describe your question or issue"
+              rows={3}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={success}
+            />
+          </div>
+          {error && <div className="text-xs text-red-600 mb-2">{error}</div>}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={success ? () => setOpen(false) : submit}
+              disabled={sending}
+              className={`px-3 py-2 rounded-md text-sm text-white ${sending ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"}`}
+            >
+              {sending ? "Sending…" : success ? "Close" : "Send"}
+            </button>
+            <button
+              onClick={() => setOpen(false)}
+              className="px-3 py-2 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

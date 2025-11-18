@@ -145,6 +145,25 @@ export async function POST(
       console.error('Failed to persist notification for allocation:', err)
     }
 
+    // Notify the incident reporter (community user) that help has been allocated
+    try {
+      if (incident.reporterId) {
+        await prisma.notification.create({
+          data: {
+            userId: incident.reporterId,
+            title: "Help is on the way",
+            message: `Resources have been allocated to your incident: ${allocation.incidentReport.title}`,
+            type: "success",
+            incidentId: allocation.incidentReport.id,
+            allocationId: allocation.id,
+            read: false,
+          }
+        })
+      }
+    } catch (err) {
+      console.error('Failed to persist notification for reporter:', err)
+    }
+
     // Fire-and-forget email notification to allocated user
     if (userToAllocate?.email) {
       sendAllocationEmail({

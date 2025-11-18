@@ -17,6 +17,7 @@ const SUGGESTIONS: Record<Role, string[]> = {
   COMMUNITY_USER: [
     "How do I report an incident?",
     "What details should I include in a report?",
+    "How do I track my incident status?",
     "Can I upload photos or video?",
   ],
   VOLUNTEER: [
@@ -53,6 +54,13 @@ function botReply(role: Role, question: string): { text: string; navigateTo?: st
         navigateTo: "/incidents/report",
       }
     }
+    if (q.includes("track") || q.includes("status") || q.includes("progress")) {
+      return {
+        text:
+          "To track your incident: 1) Go to Incidents → My Incident Reports, 2) Open your report to see current status (Pending/Verified/Resolved), resource allocations, and the timeline, 3) You’ll also receive notifications when status or allocations change. I can take you there.",
+        navigateTo: "/incidents",
+      }
+    }
     if (q.includes("photo") || q.includes("video") || q.includes("upload")) {
       return {
         text:
@@ -61,7 +69,7 @@ function botReply(role: Role, question: string): { text: string; navigateTo?: st
     }
     return {
       text:
-        "I can help you report incidents and track their status. Ask about reporting, required details, or attachments."
+        "I can help you report incidents and track their status. Ask about reporting, required details, attachments, or tracking status."
     }
   }
 

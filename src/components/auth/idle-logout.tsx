@@ -3,8 +3,8 @@
 import { useEffect, useRef } from "react"
 import { useSession, signOut } from "next-auth/react"
 
-// Inactivity logout guard: signs out after 10 minutes without user input.
-const INACTIVITY_LIMIT_MS = 10 * 60 * 1000 // 10 minutes
+// Inactivity logout guard: signs out after 1 minute without user input.
+const INACTIVITY_LIMIT_MS = 1 * 60 * 1000 // 1 minute
 const STORAGE_KEY = "cdra:lastActivityAt"
 
 export function IdleLogout() {

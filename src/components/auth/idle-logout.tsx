@@ -50,20 +50,33 @@ export function IdleLogout() {
       return
     }
 
-    // Initialize last activity from storage or now
-    let last = Date.now()
+    // Initialize last activity timestamp with a safe default on fresh authentication
+    const now = Date.now()
+    let last = now
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = parseInt(stored, 10)
         if (!Number.isNaN(parsed)) {
-          last = parsed
+          const elapsed = now - parsed
+          // If stored activity is older than the inactivity limit, reset to 'now' to avoid instant sign-out on re-login
+          if (elapsed >= INACTIVITY_LIMIT_MS) {
+            localStorage.setItem(STORAGE_KEY, String(now))
+            last = now
+          } else {
+            last = parsed
+          }
+        } else {
+          localStorage.setItem(STORAGE_KEY, String(now))
+          last = now
         }
       } else {
-        localStorage.setItem(STORAGE_KEY, String(last))
+        localStorage.setItem(STORAGE_KEY, String(now))
+        last = now
       }
     } catch {
-      // ignore
+      // On storage errors, default to current time
+      last = now
     }
     resetTimer(last)
 

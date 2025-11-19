@@ -92,7 +92,7 @@ export default function SignIn() {
           </div>
           <div className="text-center max-w-md">
             <h1 className="text-4xl font-bold mb-4">
-              Community Disaster Response Alliance
+              Community Based Disaster Response App
             </h1>
             <p className="text-xl text-blue-100 leading-relaxed">
               Connecting communities, coordinating resources, and building resilience together in times of crisis.

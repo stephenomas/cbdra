@@ -47,6 +47,14 @@ function botReply(role: Role, question: string): { text: string; navigateTo?: st
 
   // Community: Reporting guidance
   if (role === "COMMUNITY_USER") {
+    // Prioritize answering the specific "details to include" question
+    if (q.includes("detail") || q.includes("include") || q.includes("required") || q.includes("field")) {
+      return {
+        text:
+          "Include: a clear title, incident type, severity (if known), precise location/address, thorough description of what happened, and any photos/videos. Optionally add your contact info, medical ID, or emergency contact if relevant. Accurate details help responders act faster. I can take you to the report form.",
+        navigateTo: "/incidents/report",
+      }
+    }
     if (q.includes("report") || q.includes("incident")) {
       return {
         text:

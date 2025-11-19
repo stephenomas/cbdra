@@ -207,7 +207,7 @@ export default function SignUp() {
           <div className="text-center lg:text-left mb-8 lg:pl-6">
             <div className="lg:hidden mb-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Community Disaster Response Alliance
+                Community Based Disaster Response App
               </h1>
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">

@@ -48,20 +48,19 @@ function botReply(role: Role, question: string): { text: string; navigateTo?: st
   // Community: Reporting guidance
   if (role === "COMMUNITY_USER") {
     // Prioritize answering the specific "details to include" question
-    if (q.includes("detail") || q.includes("include") || q.includes("required") || q.includes("field")) {
+    if (
+      q.includes("detail") ||
+      q.includes("include") ||
+      q.includes("required") ||
+      q.includes("field")
+    ) {
       return {
         text:
           "Include: a clear title, incident type, severity (if known), precise location/address, thorough description of what happened, and any photos/videos. Optionally add your contact info, medical ID, or emergency contact if relevant. Accurate details help responders act faster. I can take you to the report form.",
         navigateTo: "/incidents/report",
       }
     }
-    if (q.includes("report") || q.includes("incident")) {
-      return {
-        text:
-          "To report an incident: 1) Go to Incidents → Report, 2) Add title, type, location, and description, 3) Attach photos/video if available, 4) Submit. I can take you there.",
-        navigateTo: "/incidents/report",
-      }
-    }
+    // Status tracking should NOT be overridden by generic incident wording
     if (q.includes("track") || q.includes("status") || q.includes("progress")) {
       return {
         text:
@@ -69,10 +68,19 @@ function botReply(role: Role, question: string): { text: string; navigateTo?: st
         navigateTo: "/incidents",
       }
     }
+    // Media attachments guidance
     if (q.includes("photo") || q.includes("video") || q.includes("upload")) {
       return {
         text:
           "Yes, you can upload photos and videos while reporting. Use the media section on the report page to attach files."
+      }
+    }
+    // Reporting guidance — avoid catching unrelated questions with the word "incident"
+    if (q.includes("report") || q.includes("submit") || q.includes("create")) {
+      return {
+        text:
+          "To report an incident: 1) Go to Incidents → Report, 2) Add title, type, location, and description, 3) Attach photos/video if available, 4) Submit. I can take you there.",
+        navigateTo: "/incidents/report",
       }
     }
     return {
@@ -83,6 +91,14 @@ function botReply(role: Role, question: string): { text: string; navigateTo?: st
 
   // Org roles: attending allocations and updating
   if (["VOLUNTEER", "NGO", "GOVERNMENT_AGENCY"].includes(role)) {
+    // Mark allocation completed
+    if (q.includes("complete") || q.includes("completed") || q.includes("mark complete")) {
+      return {
+        text:
+          "To mark an allocation completed: 1) Go to Incidents → Assigned Incidents, 2) Open the incident, 3) Use the actions to update your allocation status to Completed, 4) Add a brief note if needed. This helps admins and reporters know the work is done.",
+        navigateTo: "/incidents",
+      }
+    }
     if (q.includes("assigned") || q.includes("view incidents") || q.includes("incidents")) {
       return {
         text:

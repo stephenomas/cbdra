@@ -72,9 +72,19 @@ export default function Home() {
 
             {/* Right side - Hero Image */}
             <div className="flex justify-center lg:justify-end">
-              <div className="w-full max-w-md lg:max-w-lg">
+              <div className="w-full p-1 max-w-md lg:max-w-lg">
                 <Image
                   src="/cross3.jpg"
+                  alt="Community disaster response hero"
+                  width={512}
+                  height={512}
+                  className="rounded-lg shadow-xl"
+                  priority
+                />
+              </div>
+               <div className="p-1 w-full max-w-md lg:max-w-lg">
+                <Image
+                  src="/fema.jpeg"
                   alt="Community disaster response hero"
                   width={512}
                   height={512}

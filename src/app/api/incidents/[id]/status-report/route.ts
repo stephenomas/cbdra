@@ -19,7 +19,7 @@ export async function POST(
     }
 
     // Check if user has permission to give status reports
-    const allowedRoles = ["COMMUNITY_USER", "NGO", "GOVERNMENT_AGENCY"]
+    const allowedRoles = ["COMMUNITY_USER", "VOLUNTEER", "NGO", "GOVERNMENT_AGENCY"]
     if (!allowedRoles.includes(session.user.role)) {
       return NextResponse.json(
         { error: "You don't have permission to submit status reports" },

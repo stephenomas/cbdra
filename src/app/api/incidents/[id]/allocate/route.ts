@@ -242,3 +242,117 @@ export async function GET(
     )
   }
 }
+
+// PATCH /api/incidents/[id]/allocate - Accept or decline an allocation (Responder)
+export async function PATCH(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  const { id } = await params
+  let session: Session | null = null
+  try {
+    session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Only responders can accept/decline
+    const responderRoles = ["VOLUNTEER", "NGO", "GOVERNMENT_AGENCY"]
+    if (!responderRoles.includes(session.user.role)) {
+      return NextResponse.json(
+        { error: "Only responders can update allocation status" },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { allocationId, decision, reason } = body as { allocationId?: string; decision?: "ACCEPT" | "DECLINE"; reason?: string }
+
+    if (!allocationId || !decision) {
+      return NextResponse.json(
+        { error: "Missing required fields: allocationId, decision" },
+        { status: 400 }
+      )
+    }
+
+    if (decision !== "ACCEPT" && decision !== "DECLINE") {
+      return NextResponse.json(
+        { error: "Decision must be ACCEPT or DECLINE" },
+        { status: 400 }
+      )
+    }
+
+    // Load allocation and validate ownership and incident
+    const allocation = await prisma.resourceAllocation.findUnique({
+      where: { id: allocationId },
+      select: {
+        id: true,
+        status: true,
+        allocatedToId: true,
+        allocatedById: true,
+        incidentReportId: true,
+        incidentReport: { select: { id: true, title: true } },
+        allocatedTo: { select: { id: true, name: true, organization: true } },
+      }
+    })
+
+    if (!allocation) {
+      return NextResponse.json({ error: "Allocation not found" }, { status: 404 })
+    }
+
+    if (allocation.incidentReportId !== id) {
+      return NextResponse.json({ error: "Allocation does not belong to this incident" }, { status: 400 })
+    }
+
+    if (allocation.allocatedToId !== session.user.id) {
+      return NextResponse.json(
+        { error: "You are not authorized to update this allocation" },
+        { status: 403 }
+      )
+    }
+
+    if (allocation.status !== "ASSIGNED") {
+      return NextResponse.json(
+        { error: "Allocation decision already made or not in ASSIGNED state" },
+        { status: 400 }
+      )
+    }
+
+    const newStatus = decision === "ACCEPT" ? "ACCEPTED" : "DECLINED"
+
+    const updated = await prisma.resourceAllocation.update({
+      where: { id: allocationId },
+      data: { status: newStatus }
+    })
+
+    // Notify the allocating admin
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: allocation.allocatedById,
+          title: newStatus === "ACCEPTED" ? "Allocation Accepted" : "Allocation Declined",
+          message:
+            newStatus === "ACCEPTED"
+              ? `${allocation.allocatedTo?.name || "Responder"}${allocation.allocatedTo?.organization ? ` (${allocation.allocatedTo.organization})` : ""} accepted the allocation for incident: ${allocation.incidentReport?.title}`
+              : `${allocation.allocatedTo?.name || "Responder"}${allocation.allocatedTo?.organization ? ` (${allocation.allocatedTo.organization})` : ""} declined the allocation for incident: ${allocation.incidentReport?.title}` + (reason ? ` • Reason: ${reason}` : ""),
+          type: newStatus === "ACCEPTED" ? "success" : "alert",
+          incidentId: allocation.incidentReportId,
+          allocationId: allocation.id,
+          read: false,
+        }
+      })
+    } catch (err) {
+      console.error("Failed to persist notification for admin on allocation decision:", err)
+    }
+
+    return NextResponse.json({ success: true, status: newStatus, allocation: updated })
+
+  } catch (error) {
+    console.error("Error updating allocation status:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}

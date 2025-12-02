@@ -44,6 +44,7 @@ export async function POST(
       "VERIFIED",
       "IN_PROGRESS",
       "RESOLVED",
+      "CLOSED",
       "REJECTED",
     ] as unknown as IncidentStatus[]
 

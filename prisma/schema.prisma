@@ -24,6 +24,7 @@ enum IncidentStatus {
   IN_PROGRESS
   RESOLVED
   REJECTED
+  CLOSED
 }
 
 enum IncidentType {
